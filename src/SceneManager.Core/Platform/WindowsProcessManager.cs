@@ -14,6 +14,21 @@ public sealed class WindowsProcessManager : IProcessManager
     {
         try
         {
+            // 스토어(UWP/MSIX) 앱: WindowsApps의 exe는 ACL로 직접 실행이 막히므로
+            // 셸의 AppsFolder를 통해 AUMID로 활성화한다.
+            if (entry.Type == ProgramType.Uwp && !string.IsNullOrEmpty(entry.AppUserModelId))
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "explorer.exe",
+                    Arguments = $"shell:AppsFolder\\{entry.AppUserModelId}",
+                    UseShellExecute = true,
+                });
+
+                // explorer가 앱을 대신 띄우므로 앱 PID는 알 수 없다(창은 프로세스명으로 탐색).
+                return Task.FromResult(new ProcessLaunchResult { Success = true });
+            }
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = entry.ExecPath,

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using SceneManager.Core.Interfaces;
 using SceneManager.Core.Models;
+using SceneManager.Core.Platform;
 
 namespace SceneManager.Core.Services;
 
@@ -40,11 +41,16 @@ public sealed class SnapshotService : ISnapshotService
             if (execPath is null)
                 continue;
 
+            // 스토어(UWP/MSIX) 앱이면 AUMID로 실행해야 하므로 Uwp 타입으로 기록한다.
+            var aumid = PackagedApps.TryGetAumid(w.ProcessId);
+
             programs.Add(new ProgramEntry
             {
                 Id = Guid.NewGuid().ToString(),
                 Name = w.ProcessName,
                 ExecPath = execPath,
+                Type = aumid is null ? ProgramType.Win32 : ProgramType.Uwp,
+                AppUserModelId = aumid,
                 Order = order++,
                 Window = options.CaptureWindowPlacement ? w.Placement : null,
             });
