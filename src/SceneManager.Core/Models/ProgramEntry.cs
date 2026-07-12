@@ -41,6 +41,12 @@ public sealed class ProgramEntry
     /// <summary>실행 후 대기 시간(ms). 다음 프로그램 실행 전 지연.</summary>
     public int DelayAfterMs { get; set; }
 
+    /// <summary>
+    /// 창 배치가 자리 잡을 때까지 재시도할 최대 시간(ms). 0이면 엔진 기본값 사용.
+    /// VS·포토샵처럼 로딩이 길고 자기 레이아웃을 복원하는 앱은 크게 설정한다.
+    /// </summary>
+    public int SettleTimeoutMs { get; set; }
+
     /// <summary>선행 실행되어야 하는 프로그램의 <see cref="Id"/>. 없으면 null.</summary>
     public string? DependsOnId { get; set; }
 

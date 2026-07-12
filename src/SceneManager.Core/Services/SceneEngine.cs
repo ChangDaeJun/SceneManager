@@ -102,70 +102,102 @@ public sealed class SceneEngine : ISceneEngine
         // 실행 파일명 기준 프로세스명(런처 별칭·패키지 앱은 실제 PID가 달라질 수 있어
         // "같은 이름의 창"으로 식별한다).
         var processName = Path.GetFileNameWithoutExtension(program.ExecPath);
-        var existing = _windowManager.GetAllVisibleWindows()
-            .Where(w => string.Equals(w.ProcessName, processName, StringComparison.OrdinalIgnoreCase))
-            .ToList();
+        var alreadyRunning = FindMainWindow(processName) != IntPtr.Zero;
 
-        // 멱등: 이미 실행 중이고 창이 있으면 새로 띄우지 않고 기존 창을 재배치한다.
-        // → apply를 반복해도 창이 쌓이지 않는다.
-        if (existing.Count > 0)
+        // 멱등: 이미 실행 중이면 새로 띄우지 않고 기존 창을 재배치한다(창이 쌓이지 않음).
+        // 실행 중이 아니면 새로 실행한다.
+        var step = new StepResult
         {
-            var reposition = new StepResult { StepName = $"Reposition {program.Name}", Success = true };
-            if (program.Window is not null)
-                _windowManager.SetPlacement(existing[0].Handle, program.Window);
-            return reposition;
-        }
+            StepName = $"{(alreadyRunning ? "Reposition" : "Launch")} {program.Name}",
+            Success = true,
+        };
 
-        // 실행 중이 아니면 새로 실행 후 창을 기다려 배치한다.
-        var step = new StepResult { StepName = $"Launch {program.Name}", Success = true };
-
-        var launch = await _processManager.LaunchAsync(program, cancellationToken);
-        if (!launch.Success)
+        if (!alreadyRunning)
         {
-            step.Success = false;
-            step.ErrorMessage = launch.ErrorMessage ?? "실행 실패";
-            return step;
+            var launch = await _processManager.LaunchAsync(program, cancellationToken);
+            if (!launch.Success)
+            {
+                step.Success = false;
+                step.ErrorMessage = launch.ErrorMessage ?? "실행 실패";
+                return step;
+            }
         }
 
         // 창 배치를 저장하지 않았으면 실행만 하고 종료.
         if (program.Window is null)
             return step;
 
-        var hwnd = await WaitForNewWindowAsync(processName, [], cancellationToken);
-        if (hwnd == IntPtr.Zero)
+        // 창이 나타나 자리 잡을 때까지 반복 배치(무거운 앱·자기 레이아웃 복원 대응).
+        var settled = await SettlePlacementAsync(processName, program.Window, program.SettleTimeoutMs, cancellationToken);
+        if (!settled)
         {
             step.Success = false;
-            step.ErrorMessage = "창을 찾지 못함(타임아웃)";
-            return step;
+            step.ErrorMessage = "위치 안정화 실패(타임아웃)";
         }
 
-        _windowManager.SetPlacement(hwnd, program.Window);
         return step;
     }
 
-    /// <summary>실행 전 목록(<paramref name="existing"/>)에 없던, 같은 프로세스명의 새 창을 대기한다.</summary>
-    private async Task<IntPtr> WaitForNewWindowAsync(
-        string processName, HashSet<IntPtr> existing, CancellationToken cancellationToken, int timeoutMs = 10000)
+    /// <summary>
+    /// 대상 프로세스의 메인 창이 <paramref name="target"/> 위치에 안정적으로 자리 잡을 때까지
+    /// 주기적으로 재배치한다. 연속 <see cref="StableChecksNeeded"/>회 목표와 일치하면 성공.
+    /// 매 반복마다 메인 창을 다시 찾으므로 스플래시→본창 전환도 따라간다.
+    /// </summary>
+    private async Task<bool> SettlePlacementAsync(
+        string processName, WindowPlacement target, int settleTimeoutMs, CancellationToken cancellationToken)
     {
+        var timeoutMs = settleTimeoutMs > 0 ? settleTimeoutMs : DefaultSettleTimeoutMs;
         var stopwatch = Stopwatch.StartNew();
+        var stableCount = 0;
+
         while (stopwatch.ElapsedMilliseconds < timeoutMs)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var match = _windowManager.GetAllVisibleWindows().FirstOrDefault(w =>
-                string.Equals(w.ProcessName, processName, StringComparison.OrdinalIgnoreCase)
-                && !existing.Contains(w.Handle));
+            var hwnd = FindMainWindow(processName);
+            if (hwnd != IntPtr.Zero)
+            {
+                var current = _windowManager.GetPlacement(hwnd);
+                if (IsAtTarget(current, target))
+                {
+                    if (++stableCount >= StableChecksNeeded)
+                        return true; // 연속으로 목표에 머무름 → 안정
+                }
+                else
+                {
+                    _windowManager.SetPlacement(hwnd, target); // 어긋남(또는 첫 배치) → 다시 배치
+                    stableCount = 0;
+                }
+            }
 
-            if (match is not null)
-                return match.Handle;
-
-            await Task.Delay(WindowPollIntervalMs, cancellationToken);
+            await Task.Delay(PlacementPollIntervalMs, cancellationToken);
         }
 
-        return IntPtr.Zero;
+        return false; // 타임아웃까지 안정화 실패
     }
 
-    private const int WindowPollIntervalMs = 150;
+    /// <summary>프로세스의 메인 창 = 같은 이름의 보이는 창 중 면적이 가장 큰 것(스플래시 제외).</summary>
+    private IntPtr FindMainWindow(string processName)
+    {
+        var main = _windowManager.GetAllVisibleWindows()
+            .Where(w => string.Equals(w.ProcessName, processName, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(w => w.Placement.Width * w.Placement.Height)
+            .FirstOrDefault();
+
+        return main?.Handle ?? IntPtr.Zero;
+    }
+
+    /// <summary>현재 배치가 목표와 허용 오차(<see cref="PositionTolerancePx"/>) 내로 일치하는지.</summary>
+    private static bool IsAtTarget(WindowPlacement current, WindowPlacement target)
+        => Math.Abs(current.X - target.X) <= PositionTolerancePx
+        && Math.Abs(current.Y - target.Y) <= PositionTolerancePx
+        && Math.Abs(current.Width - target.Width) <= PositionTolerancePx
+        && Math.Abs(current.Height - target.Height) <= PositionTolerancePx;
+
+    private const int PlacementPollIntervalMs = 200;
+    private const int StableChecksNeeded = 2;
+    private const int DefaultSettleTimeoutMs = 6000;
+    private const double PositionTolerancePx = 4;
 
     private void ReportProgress(string description, int current, int total)
     {
