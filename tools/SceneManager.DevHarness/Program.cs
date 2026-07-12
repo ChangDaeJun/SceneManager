@@ -38,10 +38,10 @@ switch (args[0].ToLowerInvariant())
     case "apply":
         if (args.Length < 2)
         {
-            Console.WriteLine("사용법: apply <name>");
+            Console.WriteLine("사용법: apply <name> [name2 ...]");
             break;
         }
-        await ApplyAsync(args[1]);
+        await ApplyAsync(args[1..]);
         break;
 
     default:
@@ -86,16 +86,11 @@ static async Task SnapshotAsync(string name)
     Console.WriteLine($"→ {System.IO.Path.Combine(ScenesDirectory(), name + ".json")}");
 }
 
-static async Task ApplyAsync(string name)
+static async Task ApplyAsync(string[] names)
 {
     var repository = new JsonSceneRepository(ScenesDirectory());
-    var scene = await repository.GetByNameAsync(name);
-    if (scene is null)
-    {
-        Console.WriteLine($"씬 '{name}'을(를) 찾을 수 없음.");
-        return;
-    }
 
+    // 하나의 엔진 인스턴스를 재사용해야 CurrentSceneId가 유지되어 close-previous가 동작한다.
     var engine = new SceneEngine(
         repository,
         new WindowsProcessManager(),
@@ -105,15 +100,25 @@ static async Task ApplyAsync(string name)
     engine.ProgressChanged += (_, e) =>
         Console.WriteLine($"  [{e.CurrentStep}/{e.TotalSteps}] {e.StepDescription}");
 
-    Console.WriteLine($"씬 '{scene.Name}' 적용 시작...");
-    var result = await engine.ApplyAsync(scene.Id);
-
-    Console.WriteLine($"완료 ({result.Elapsed.TotalSeconds:F1}s, 성공={result.Success}):");
-    foreach (var step in result.Steps)
+    foreach (var name in names)
     {
-        var mark = step.Success ? "✓" : "✗";
-        var err = step.ErrorMessage is null ? "" : $" — {step.ErrorMessage}";
-        Console.WriteLine($"  {mark} {step.StepName}{err}");
+        var scene = await repository.GetByNameAsync(name);
+        if (scene is null)
+        {
+            Console.WriteLine($"씬 '{name}'을(를) 찾을 수 없음.");
+            continue;
+        }
+
+        Console.WriteLine($"씬 '{scene.Name}' 적용 시작...");
+        var result = await engine.ApplyAsync(scene.Id);
+
+        Console.WriteLine($"완료 ({result.Elapsed.TotalSeconds:F1}s, 성공={result.Success}):");
+        foreach (var step in result.Steps)
+        {
+            var mark = step.Success ? "✓" : "✗";
+            var err = step.ErrorMessage is null ? "" : $" — {step.ErrorMessage}";
+            Console.WriteLine($"  {mark} {step.StepName}{err}");
+        }
     }
 }
 

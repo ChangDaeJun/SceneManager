@@ -45,6 +45,9 @@ public sealed class SceneEngine : ISceneEngine
             return result;
         }
 
+        // 새 씬 실행 전에 이전 씬 프로그램을 정리한다.
+        await ClosePreviousSceneAsync(scene, result, cancellationToken);
+
         // 의존성 순서대로 그룹화(같은 그룹은 병렬 가능하지만 v0는 순차 실행).
         var levels = _dependencyResolver.Resolve(scene.Programs);
         var totalSteps = scene.Programs.Count;
@@ -71,6 +74,47 @@ public sealed class SceneEngine : ISceneEngine
         CurrentSceneId = sceneId;
         result.Elapsed = stopwatch.Elapsed;
         return result;
+    }
+
+    /// <summary>
+    /// 새 씬 적용 전, 직전에 적용된 씬(<see cref="CurrentSceneId"/>)의 프로그램을 정리한다.
+    /// 새 씬의 <see cref="Scene.ClosePreviousScene"/>가 켜져 있고, 이전 씬 프로그램 중
+    /// <see cref="ProgramEntry.CloseOnSceneExit"/>가 켜진 항목만 종료한다.
+    /// </summary>
+    private async Task ClosePreviousSceneAsync(Scene newScene, SceneApplyResult result, CancellationToken cancellationToken)
+    {
+        if (!newScene.ClosePreviousScene || CurrentSceneId is null)
+            return;
+
+        var previous = await _repository.GetByIdAsync(CurrentSceneId, cancellationToken);
+        if (previous is null)
+            return;
+
+        foreach (var program in previous.Programs)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!program.CloseOnSceneExit)
+                continue;
+
+            var step = new StepResult { StepName = $"Close {program.Name}", Success = true };
+            try
+            {
+                if (!await _processManager.CloseAsync(program, cancellationToken: cancellationToken))
+                {
+                    step.Success = false;
+                    step.ErrorMessage = "종료 실패";
+                    result.Success = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                step.Success = false;
+                step.ErrorMessage = ex.Message;
+                result.Success = false;
+            }
+
+            result.Steps.Add(step);
+        }
     }
 
     private async Task<StepResult> ApplyProgramAsync(ProgramEntry program, CancellationToken cancellationToken)
