@@ -78,11 +78,51 @@ public sealed class WindowsWindowManager : IWindowManager
         return ToPlacement(rect);
     }
 
-    public Task<IntPtr> WaitForWindowAsync(int processId, int timeoutMs = 10000, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException("4단계에서 구현");
+    public async Task<IntPtr> WaitForWindowAsync(int processId, int timeoutMs = 10000, CancellationToken cancellationToken = default)
+    {
+        var sw = Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < timeoutMs)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            try
+            {
+                using var proc = Process.GetProcessById(processId);
+                proc.Refresh(); // MainWindowHandle 캐시 갱신
+                if (proc.MainWindowHandle != IntPtr.Zero)
+                    return proc.MainWindowHandle;
+            }
+            catch (ArgumentException)
+            {
+                return IntPtr.Zero; // 프로세스가 이미 종료됨
+            }
+
+            await Task.Delay(PollIntervalMs, cancellationToken);
+        }
+
+        return IntPtr.Zero; // 타임아웃
+    }
 
     public void SetPlacement(IntPtr hwnd, WindowPlacement placement)
-        => throw new NotImplementedException("4단계에서 구현");
+    {
+        switch (placement.State)
+        {
+            case WindowState.Minimized:
+                ShowWindow(hwnd, SW_MINIMIZE);
+                return;
+            case WindowState.Maximized:
+                ShowWindow(hwnd, SW_MAXIMIZE);
+                return;
+        }
+
+        // Normal: 최대화/최소화 상태였다면 먼저 복원한 뒤 위치·크기 지정
+        ShowWindow(hwnd, SW_RESTORE);
+        SetWindowPos(
+            hwnd, IntPtr.Zero,
+            (int)placement.X, (int)placement.Y,
+            (int)placement.Width, (int)placement.Height,
+            SWP_NOZORDER | SWP_NOACTIVATE);
+    }
 
     private static WindowPlacement ToPlacement(RECT rect) => new()
     {
@@ -119,9 +159,20 @@ public sealed class WindowsWindowManager : IWindowManager
         return hr == 0 && cloaked != 0;
     }
 
+    private const int PollIntervalMs = 100;
+
     // ────── P/Invoke ──────
     private const uint GW_OWNER = 4;
     private const int DWMWA_CLOAKED = 14;
+
+    // ShowWindow 명령
+    private const int SW_MAXIMIZE = 3;
+    private const int SW_MINIMIZE = 6;
+    private const int SW_RESTORE = 9;
+
+    // SetWindowPos 플래그
+    private const uint SWP_NOZORDER = 0x0004;   // Z-순서 유지
+    private const uint SWP_NOACTIVATE = 0x0010; // 활성화(포커스) 안 함
 
     private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
 
@@ -151,6 +202,12 @@ public sealed class WindowsWindowManager : IWindowManager
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hwnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetWindowPos(IntPtr hwnd, IntPtr hwndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT

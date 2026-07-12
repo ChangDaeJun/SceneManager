@@ -35,6 +35,15 @@ switch (args[0].ToLowerInvariant())
         await ListScenesAsync();
         break;
 
+    case "apply":
+        if (args.Length < 2)
+        {
+            Console.WriteLine("사용법: apply <name>");
+            break;
+        }
+        await ApplyAsync(args[1]);
+        break;
+
     default:
         Console.WriteLine($"알 수 없는 명령: {args[0]}");
         PrintUsage();
@@ -77,6 +86,37 @@ static async Task SnapshotAsync(string name)
     Console.WriteLine($"→ {System.IO.Path.Combine(ScenesDirectory(), name + ".json")}");
 }
 
+static async Task ApplyAsync(string name)
+{
+    var repository = new JsonSceneRepository(ScenesDirectory());
+    var scene = await repository.GetByNameAsync(name);
+    if (scene is null)
+    {
+        Console.WriteLine($"씬 '{name}'을(를) 찾을 수 없음.");
+        return;
+    }
+
+    var engine = new SceneEngine(
+        repository,
+        new WindowsProcessManager(),
+        new WindowsWindowManager(),
+        new DependencyResolver());
+
+    engine.ProgressChanged += (_, e) =>
+        Console.WriteLine($"  [{e.CurrentStep}/{e.TotalSteps}] {e.StepDescription}");
+
+    Console.WriteLine($"씬 '{scene.Name}' 적용 시작...");
+    var result = await engine.ApplyAsync(scene.Id);
+
+    Console.WriteLine($"완료 ({result.Elapsed.TotalSeconds:F1}s, 성공={result.Success}):");
+    foreach (var step in result.Steps)
+    {
+        var mark = step.Success ? "✓" : "✗";
+        var err = step.ErrorMessage is null ? "" : $" — {step.ErrorMessage}";
+        Console.WriteLine($"  {mark} {step.StepName}{err}");
+    }
+}
+
 static async Task ListScenesAsync()
 {
     var repository = new JsonSceneRepository(ScenesDirectory());
@@ -100,5 +140,5 @@ static void PrintUsage()
     Console.WriteLine("  list-windows          현재 보이는 창 목록");
     Console.WriteLine("  snapshot <name>       현재 창들을 씬으로 저장");
     Console.WriteLine("  list-scenes           저장된 씬 목록");
-    Console.WriteLine("  apply <name>          (예정) 저장된 씬을 실행/배치");
+    Console.WriteLine("  apply <name>          저장된 씬을 실행/배치");
 }
