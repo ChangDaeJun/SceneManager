@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- WinExe: 더블클릭 시 콘솔 창이 뜨지 않음. 로그는 파일로 남긴다.
+         (터미널에서 실행하면 출력은 그대로 보인다.) -->
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>SceneManager.Runner</AssemblyName>
+    <!-- Per-Monitor DPI 인식: 좌표가 가상화되지 않도록 -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SceneManager.Core\SceneManager.Core.csproj" />
+  </ItemGroup>
+
+</Project>

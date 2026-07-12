@@ -99,12 +99,25 @@ public sealed class SceneEngine : ISceneEngine
 
     private async Task<StepResult> ApplyProgramAsync(ProgramEntry program, CancellationToken cancellationToken)
     {
-        var step = new StepResult { StepName = $"Launch {program.Name}", Success = true };
-
         // 실행 파일명 기준 프로세스명(런처 별칭·패키지 앱은 실제 PID가 달라질 수 있어
-        // "새로 나타난 같은 이름의 창"으로 식별한다).
+        // "같은 이름의 창"으로 식별한다).
         var processName = Path.GetFileNameWithoutExtension(program.ExecPath);
-        var existingHandles = HandlesOf(processName);
+        var existing = _windowManager.GetAllVisibleWindows()
+            .Where(w => string.Equals(w.ProcessName, processName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        // 멱등: 이미 실행 중이고 창이 있으면 새로 띄우지 않고 기존 창을 재배치한다.
+        // → apply를 반복해도 창이 쌓이지 않는다.
+        if (existing.Count > 0)
+        {
+            var reposition = new StepResult { StepName = $"Reposition {program.Name}", Success = true };
+            if (program.Window is not null)
+                _windowManager.SetPlacement(existing[0].Handle, program.Window);
+            return reposition;
+        }
+
+        // 실행 중이 아니면 새로 실행 후 창을 기다려 배치한다.
+        var step = new StepResult { StepName = $"Launch {program.Name}", Success = true };
 
         var launch = await _processManager.LaunchAsync(program, cancellationToken);
         if (!launch.Success)
@@ -118,7 +131,7 @@ public sealed class SceneEngine : ISceneEngine
         if (program.Window is null)
             return step;
 
-        var hwnd = await WaitForNewWindowAsync(processName, existingHandles, cancellationToken);
+        var hwnd = await WaitForNewWindowAsync(processName, [], cancellationToken);
         if (hwnd == IntPtr.Zero)
         {
             step.Success = false;
@@ -129,13 +142,6 @@ public sealed class SceneEngine : ISceneEngine
         _windowManager.SetPlacement(hwnd, program.Window);
         return step;
     }
-
-    /// <summary>지정한 프로세스명의 현재 보이는 창 핸들 집합.</summary>
-    private HashSet<IntPtr> HandlesOf(string processName)
-        => _windowManager.GetAllVisibleWindows()
-            .Where(w => string.Equals(w.ProcessName, processName, StringComparison.OrdinalIgnoreCase))
-            .Select(w => w.Handle)
-            .ToHashSet();
 
     /// <summary>실행 전 목록(<paramref name="existing"/>)에 없던, 같은 프로세스명의 새 창을 대기한다.</summary>
     private async Task<IntPtr> WaitForNewWindowAsync(
