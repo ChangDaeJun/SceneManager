@@ -14,17 +14,20 @@ public sealed class SceneEngine : ISceneEngine
     private readonly IProcessManager _processManager;
     private readonly IWindowManager _windowManager;
     private readonly DependencyResolver _dependencyResolver;
+    private readonly ProcessFilterEvaluator _filter;
 
     public SceneEngine(
         ISceneRepository repository,
         IProcessManager processManager,
         IWindowManager windowManager,
-        DependencyResolver dependencyResolver)
+        DependencyResolver dependencyResolver,
+        ProcessFilterEvaluator filter)
     {
         _repository = repository;
         _processManager = processManager;
         _windowManager = windowManager;
         _dependencyResolver = dependencyResolver;
+        _filter = filter;
     }
 
     public string? CurrentSceneId { get; private set; }
@@ -44,9 +47,6 @@ public sealed class SceneEngine : ISceneEngine
             result.Elapsed = stopwatch.Elapsed;
             return result;
         }
-
-        // 새 씬 실행 전에 이전 씬 프로그램을 정리한다.
-        await ClosePreviousSceneAsync(scene, result, cancellationToken);
 
         // 의존성 순서대로 그룹화(같은 그룹은 병렬 가능하지만 v0는 순차 실행).
         var levels = _dependencyResolver.Resolve(scene.Programs);
@@ -76,45 +76,25 @@ public sealed class SceneEngine : ISceneEngine
         return result;
     }
 
-    /// <summary>
-    /// 새 씬 적용 전, 직전에 적용된 씬(<see cref="CurrentSceneId"/>)의 프로그램을 정리한다.
-    /// 새 씬의 <see cref="Scene.ClosePreviousScene"/>가 켜져 있고, 이전 씬 프로그램 중
-    /// <see cref="ProgramEntry.CloseOnSceneExit"/>가 켜진 항목만 종료한다.
-    /// </summary>
-    private async Task ClosePreviousSceneAsync(Scene newScene, SceneApplyResult result, CancellationToken cancellationToken)
+    public Task<int> ClearAsync(CancellationToken cancellationToken = default)
     {
-        if (!newScene.ClosePreviousScene || CurrentSceneId is null)
-            return;
+        var self = Environment.ProcessId; // 자기 자신(러너)의 창은 닫지 않는다
+        var closed = 0;
 
-        var previous = await _repository.GetByIdAsync(CurrentSceneId, cancellationToken);
-        if (previous is null)
-            return;
-
-        foreach (var program in previous.Programs)
+        foreach (var window in _windowManager.GetAllVisibleWindows())
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (!program.CloseOnSceneExit)
+
+            if (window.ProcessId == self)
                 continue;
+            if (!_filter.ShouldInclude(window.ProcessName))
+                continue; // 시스템/셸 프로세스는 건드리지 않음
 
-            var step = new StepResult { StepName = $"Close {program.Name}", Success = true };
-            try
-            {
-                if (!await _processManager.CloseAsync(program, cancellationToken: cancellationToken))
-                {
-                    step.Success = false;
-                    step.ErrorMessage = "종료 실패";
-                    result.Success = false;
-                }
-            }
-            catch (Exception ex)
-            {
-                step.Success = false;
-                step.ErrorMessage = ex.Message;
-                result.Success = false;
-            }
-
-            result.Steps.Add(step);
+            _windowManager.CloseWindow(window.Handle);
+            closed++;
         }
+
+        return Task.FromResult(closed);
     }
 
     private async Task<StepResult> ApplyProgramAsync(ProgramEntry program, CancellationToken cancellationToken)

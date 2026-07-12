@@ -9,6 +9,13 @@ public interface ISceneEngine
     /// <summary>씬을 적용한다(전체 플로우).</summary>
     Task<SceneApplyResult> ApplyAsync(string sceneId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// 현재 보이는 사용자 창을 모두 닫아 빈 바탕화면 상태로 만든다(WM_CLOSE).
+    /// 씬 적용 전, "기존 프로그램 정리" 옵션이 켜졌을 때 러너가 호출한다.
+    /// 반환값은 닫기를 요청한 창 수.
+    /// </summary>
+    Task<int> ClearAsync(CancellationToken cancellationToken = default);
+
     /// <summary>현재 적용 중인 씬의 ID. 적용된 씬이 없으면 null.</summary>
     string? CurrentSceneId { get; }
 

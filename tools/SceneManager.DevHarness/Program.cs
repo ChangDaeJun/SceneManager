@@ -38,10 +38,14 @@ switch (args[0].ToLowerInvariant())
     case "apply":
         if (args.Length < 2)
         {
-            Console.WriteLine("사용법: apply <name> [name2 ...]");
+            Console.WriteLine("사용법: apply <name> [--clean]");
             break;
         }
-        await ApplyAsync(args[1..]);
+        await ApplyAsync(args[1], clean: args.Contains("--clean"));
+        break;
+
+    case "clear":
+        await ClearAsync();
         break;
 
     default:
@@ -86,41 +90,52 @@ static async Task SnapshotAsync(string name)
     Console.WriteLine($"→ {System.IO.Path.Combine(ScenesDirectory(), name + ".json")}");
 }
 
-static async Task ApplyAsync(string[] names)
+static async Task ApplyAsync(string name, bool clean)
 {
     var repository = new JsonSceneRepository(ScenesDirectory());
+    var scene = await repository.GetByNameAsync(name);
+    if (scene is null)
+    {
+        Console.WriteLine($"씬 '{name}'을(를) 찾을 수 없음.");
+        return;
+    }
 
-    // 하나의 엔진 인스턴스를 재사용해야 CurrentSceneId가 유지되어 close-previous가 동작한다.
-    var engine = new SceneEngine(
-        repository,
-        new WindowsProcessManager(),
-        new WindowsWindowManager(),
-        new DependencyResolver());
-
+    var engine = CreateEngine(repository);
     engine.ProgressChanged += (_, e) =>
         Console.WriteLine($"  [{e.CurrentStep}/{e.TotalSteps}] {e.StepDescription}");
 
-    foreach (var name in names)
+    if (clean)
     {
-        var scene = await repository.GetByNameAsync(name);
-        if (scene is null)
-        {
-            Console.WriteLine($"씬 '{name}'을(를) 찾을 수 없음.");
-            continue;
-        }
+        var cleared = await engine.ClearAsync();
+        Console.WriteLine($"기존 창 정리(--clean): {cleared}개 닫기 요청");
+        await Task.Delay(800); // 창이 실제로 닫힐 시간을 준다
+    }
 
-        Console.WriteLine($"씬 '{scene.Name}' 적용 시작...");
-        var result = await engine.ApplyAsync(scene.Id);
+    Console.WriteLine($"씬 '{scene.Name}' 적용 시작...");
+    var result = await engine.ApplyAsync(scene.Id);
 
-        Console.WriteLine($"완료 ({result.Elapsed.TotalSeconds:F1}s, 성공={result.Success}):");
-        foreach (var step in result.Steps)
-        {
-            var mark = step.Success ? "✓" : "✗";
-            var err = step.ErrorMessage is null ? "" : $" — {step.ErrorMessage}";
-            Console.WriteLine($"  {mark} {step.StepName}{err}");
-        }
+    Console.WriteLine($"완료 ({result.Elapsed.TotalSeconds:F1}s, 성공={result.Success}):");
+    foreach (var step in result.Steps)
+    {
+        var mark = step.Success ? "✓" : "✗";
+        var err = step.ErrorMessage is null ? "" : $" — {step.ErrorMessage}";
+        Console.WriteLine($"  {mark} {step.StepName}{err}");
     }
 }
+
+static async Task ClearAsync()
+{
+    var engine = CreateEngine(new JsonSceneRepository(ScenesDirectory()));
+    var cleared = await engine.ClearAsync();
+    Console.WriteLine($"닫기 요청: {cleared}개 창");
+}
+
+static SceneEngine CreateEngine(JsonSceneRepository repository) => new(
+    repository,
+    new WindowsProcessManager(),
+    new WindowsWindowManager(),
+    new DependencyResolver(),
+    new ProcessFilterEvaluator(ProcessFilterEvaluator.CreateSystemDefault()));
 
 static async Task ListScenesAsync()
 {
@@ -145,5 +160,6 @@ static void PrintUsage()
     Console.WriteLine("  list-windows          현재 보이는 창 목록");
     Console.WriteLine("  snapshot <name>       현재 창들을 씬으로 저장");
     Console.WriteLine("  list-scenes           저장된 씬 목록");
-    Console.WriteLine("  apply <name>          저장된 씬을 실행/배치");
+    Console.WriteLine("  apply <name> [--clean]  저장된 씬을 실행/배치 (--clean: 기존 창 먼저 정리)");
+    Console.WriteLine("  clear                 현재 보이는 사용자 창을 모두 닫음(빈 바탕화면)");
 }

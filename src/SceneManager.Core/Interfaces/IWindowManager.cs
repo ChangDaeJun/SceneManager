@@ -22,6 +22,12 @@ public interface IWindowManager
 
     /// <summary>현재 보이는 모든 윈도우의 정보를 가져온다.</summary>
     List<WindowInfo> GetAllVisibleWindows();
+
+    /// <summary>
+    /// 윈도우에 닫기(WM_CLOSE)를 요청한다. 사용자가 X를 누른 것과 동일하며,
+    /// 앱이 저장 대화상자를 띄울 수 있다(강제 종료 아님). 프로세스는 죽이지 않는다.
+    /// </summary>
+    void CloseWindow(IntPtr hwnd);
 }
 
 /// <summary>

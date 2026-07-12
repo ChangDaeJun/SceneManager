@@ -78,6 +78,9 @@ public sealed class WindowsWindowManager : IWindowManager
         return ToPlacement(rect);
     }
 
+    public void CloseWindow(IntPtr hwnd)
+        => PostMessage(hwnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero); // 큐에 넣고 즉시 반환(비차단)
+
     public async Task<IntPtr> WaitForWindowAsync(int processId, int timeoutMs = 10000, CancellationToken cancellationToken = default)
     {
         var sw = Stopwatch.StartNew();
@@ -174,6 +177,8 @@ public sealed class WindowsWindowManager : IWindowManager
     private const uint SWP_NOZORDER = 0x0004;   // Z-순서 유지
     private const uint SWP_NOACTIVATE = 0x0010; // 활성화(포커스) 안 함
 
+    private const uint WM_CLOSE = 0x0010;
+
     private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
 
     [DllImport("user32.dll")]
@@ -208,6 +213,9 @@ public sealed class WindowsWindowManager : IWindowManager
 
     [DllImport("user32.dll")]
     private static extern bool SetWindowPos(IntPtr hwnd, IntPtr hwndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
+
+    [DllImport("user32.dll")]
+    private static extern bool PostMessage(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT
