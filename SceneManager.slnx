@@ -1,7 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/SceneManager.Core/SceneManager.Core.csproj" />
-    <Project Path="src/SceneManager.Runner/SceneManager.Runner.csproj" />
+    <Project Path="src/SceneRunner/SceneRunner.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/SceneManager.Core.Tests/SceneManager.Core.Tests.csproj" />

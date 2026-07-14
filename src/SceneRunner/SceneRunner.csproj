@@ -7,7 +7,7 @@
     <TargetFramework>net8.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>SceneManager.Runner</AssemblyName>
+    <AssemblyName>SceneRunner</AssemblyName>
     <!-- Per-Monitor DPI 인식: 좌표가 가상화되지 않도록 -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>

@@ -1,6 +1,6 @@
 // SceneManager.Runner — 씬 JSON을 실행/배치하는 무상태 실행기.
 // 바탕화면 바로가기가 이 exe를 인자와 함께 실행한다.
-//   SceneManager.Runner.exe <scene-name> [--clean]
+//   SceneRunner.exe <scene-name> [--clean]
 //     <scene-name>  적용할 씬 이름 (AppData\SceneManager\scenes\{name}.json)
 //     --clean       실행 전 현재 보이는 창을 모두 닫아 빈 바탕화면부터 시작
 
@@ -30,7 +30,7 @@ var sceneName = args.FirstOrDefault(a => !a.StartsWith("--"));
 
 if (sceneName is null)
 {
-    Log("오류: 씬 이름이 없습니다. 사용법: SceneManager.Runner.exe <scene-name> [--clean]");
+    Log("오류: 씬 이름이 없습니다. 사용법: SceneRunner.exe <scene-name> [--clean]");
     return 2;
 }
 
