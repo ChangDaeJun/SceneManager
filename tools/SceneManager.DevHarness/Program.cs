@@ -68,7 +68,7 @@ static void ListWindows()
     {
         var p = w.Placement;
         Console.WriteLine(
-            $"  [{w.ProcessName,-18}] ({p.X,5},{p.Y,5}) {p.Width,5}x{p.Height,-5}  \"{Truncate(w.WindowTitle, 45)}\"");
+            $"  [{w.ProcessName,-18}] ({p.X,5},{p.Y,5}) {p.Width,5}x{p.Height,-5}  {{{w.WindowClass,-22}}}  \"{Truncate(w.WindowTitle, 40)}\"");
     }
 }
 

@@ -57,6 +57,9 @@ public sealed class WindowInfo
     /// <summary>윈도우 제목. 제목이 없으면 빈 문자열.</summary>
     public required string WindowTitle { get; set; }
 
+    /// <summary>윈도우 클래스명. 같은 프로세스의 창 종류(예: 메인 vs 대화방) 구분에 쓴다.</summary>
+    public string WindowClass { get; set; } = string.Empty;
+
     /// <summary>실행 파일 경로. 접근 불가(보호/승격 프로세스) 시 null.</summary>
     public string? ExecPath { get; set; }
 

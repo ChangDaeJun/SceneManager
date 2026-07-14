@@ -128,6 +128,7 @@ public sealed class WindowsDesktopManager : IDesktopManager
                 ProcessId = (int)pid,
                 ProcessName = processName,
                 WindowTitle = title,
+                WindowClass = className,
                 ExecPath = execPath,
                 AppUserModelId = TryGetAumid((int)pid), // 스토어 앱이면 AUMID, 아니면 null
                 Placement = ToPlacement(rect, GetWindowStateOf(hwnd))
