@@ -33,6 +33,11 @@ public interface IDesktopManager
     /// 앱이 저장 대화상자를 띄울 수 있다(강제 종료 아님). 프로세스는 죽이지 않는다.
     /// </summary>
     void CloseWindow(IntPtr hwnd);
+
+    // ────── 모니터 ──────
+
+    /// <summary>현재 연결된 모니터 구성을 가져온다(물리 픽셀, 가상 스크린 좌표).</summary>
+    MonitorLayout GetMonitorLayout();
 }
 
 /// <summary>

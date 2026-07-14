@@ -169,6 +169,36 @@ public sealed class WindowsDesktopManager : IDesktopManager
             SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
+    public MonitorLayout GetMonitorLayout()
+    {
+        var monitors = new List<MonitorInfo>();
+
+        EnumDisplayMonitors(IntPtr.Zero, IntPtr.Zero, (IntPtr hMonitor, IntPtr hdc, ref RECT rect, IntPtr data) =>
+        {
+            var mi = new MONITORINFOEX { cbSize = Marshal.SizeOf<MONITORINFOEX>() };
+            if (GetMonitorInfo(hMonitor, ref mi))
+            {
+                var r = mi.rcMonitor;
+                monitors.Add(new MonitorInfo
+                {
+                    Id = mi.szDevice,
+                    DeviceName = mi.szDevice,
+                    PhysicalWidth = r.Right - r.Left,
+                    PhysicalHeight = r.Bottom - r.Top,
+                    LogicalWidth = r.Right - r.Left,   // v0: DPI 변환 생략
+                    LogicalHeight = r.Bottom - r.Top,
+                    DpiScale = 100,
+                    PositionX = r.Left,                // 가상 스크린 물리 좌표
+                    PositionY = r.Top,
+                    IsPrimary = (mi.dwFlags & MONITORINFOF_PRIMARY) != 0,
+                });
+            }
+            return true; // 계속 열거
+        }, IntPtr.Zero);
+
+        return new MonitorLayout { Monitors = monitors };
+    }
+
     private static WindowPlacement ToPlacement(RECT rect) => new()
     {
         MonitorId = "primary", // v0: 모니터 매핑 생략
@@ -299,6 +329,16 @@ public sealed class WindowsDesktopManager : IDesktopManager
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     private static extern int GetApplicationUserModelId(IntPtr hProcess, ref uint applicationUserModelIdLength, StringBuilder? applicationUserModelId);
 
+    private const int MONITORINFOF_PRIMARY = 1;
+
+    private delegate bool MonitorEnumProc(IntPtr hMonitor, IntPtr hdc, ref RECT rect, IntPtr data);
+
+    [DllImport("user32.dll")]
+    private static extern bool EnumDisplayMonitors(IntPtr hdc, IntPtr lprcClip, MonitorEnumProc lpfnEnum, IntPtr dwData);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFOEX lpmi);
+
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT
     {
@@ -306,5 +346,16 @@ public sealed class WindowsDesktopManager : IDesktopManager
         public int Top;
         public int Right;
         public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private struct MONITORINFOEX
+    {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public int dwFlags;
+        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
+        public string szDevice;
     }
 }

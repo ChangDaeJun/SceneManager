@@ -45,6 +45,7 @@ public sealed class ProcessFilter
     {
         SystemBlacklist =
         [
+            "SceneManager",            // 편집기 자신(스냅샷에서 제외; PID 자기 제외의 보조)
             "TextInputHost",           // Windows 입력 환경(IME/터치 키보드)
             "ApplicationFrameHost",    // UWP 앱 프레임 호스트
             "SystemSettings",          // 설정 앱 콘텐츠 프로세스

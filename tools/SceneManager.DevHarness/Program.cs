@@ -22,6 +22,10 @@ switch (args[0].ToLowerInvariant())
         ListWindows();
         break;
 
+    case "list-monitors":
+        ListMonitors();
+        break;
+
     case "snapshot":
         if (args.Length < 2)
         {
@@ -66,6 +70,14 @@ static void ListWindows()
         Console.WriteLine(
             $"  [{w.ProcessName,-18}] ({p.X,5},{p.Y,5}) {p.Width,5}x{p.Height,-5}  \"{Truncate(w.WindowTitle, 45)}\"");
     }
+}
+
+static void ListMonitors()
+{
+    var layout = new WindowsDesktopManager().GetMonitorLayout();
+    Console.WriteLine($"모니터 {layout.Monitors.Count}개:");
+    foreach (var m in layout.Monitors)
+        Console.WriteLine($"  {(m.IsPrimary ? "*" : " ")} [{m.DeviceName}] ({m.PositionX},{m.PositionY}) {m.PhysicalWidth}x{m.PhysicalHeight}");
 }
 
 static async Task SnapshotAsync(string name)
@@ -162,6 +174,7 @@ static void PrintUsage()
     Console.WriteLine("사용법: dev-harness <command> [args]");
     Console.WriteLine("  hello                 동작 확인");
     Console.WriteLine("  list-windows          현재 보이는 창 목록");
+    Console.WriteLine("  list-monitors         현재 모니터 구성");
     Console.WriteLine("  snapshot <name>       현재 창들을 씬으로 저장");
     Console.WriteLine("  list-scenes           저장된 씬 목록");
     Console.WriteLine("  apply <name> [--clean]  저장된 씬을 실행/배치 (--clean: 기존 창 먼저 정리)");

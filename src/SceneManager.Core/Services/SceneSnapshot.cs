@@ -24,12 +24,16 @@ public sealed class SceneSnapshot : ISceneSnapshot
     public Task<Scene> CapturePartialAsync(string sceneName, SnapshotOptions options, CancellationToken cancellationToken = default)
     {
         var windows = _desktop.GetAllVisibleWindows();
+        var self = Environment.ProcessId; // 스냅샷을 요청한 프로세스(편집기 자신)는 제외
         var programs = new List<ProgramEntry>();
         var order = 0;
 
         foreach (var w in windows)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (w.ProcessId == self)
+                continue;
 
             if (!_filter.ShouldInclude(w.ProcessName))
                 continue;
