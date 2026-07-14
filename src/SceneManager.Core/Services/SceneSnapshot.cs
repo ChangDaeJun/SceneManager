@@ -54,6 +54,7 @@ public sealed class SceneSnapshot : ISceneSnapshot
                 // 스토어(UWP/MSIX) 앱이면 AUMID로 실행해야 하므로 Uwp 타입으로 기록한다.
                 Type = w.AppUserModelId is null ? ProgramType.Win32 : ProgramType.Uwp,
                 AppUserModelId = w.AppUserModelId,
+                WindowTitle = w.WindowTitle,
                 Order = order++,
                 Window = options.CaptureWindowPlacement ? w.Placement : null,
             });

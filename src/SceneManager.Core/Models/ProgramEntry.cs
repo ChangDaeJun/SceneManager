@@ -53,6 +53,12 @@ public sealed class ProgramEntry
     /// <summary>관리자 권한으로 실행해야 하는지 여부. true면 UAC 승격 요청.</summary>
     public bool RequiresAdmin { get; set; }
 
+    /// <summary>
+    /// 캡처 시점의 창 제목. 같은 프로세스의 여러 창(예: 카카오톡 본체 vs 대화방)을
+    /// 적용 시 구분하는 매칭 힌트로 쓴다. 없으면 프로세스명 + 크기로 매칭.
+    /// </summary>
+    public string? WindowTitle { get; set; }
+
     /// <summary>창 배치 정보. 배치를 저장하지 않은 경우 null.</summary>
     public WindowPlacement? Window { get; set; }
 }
