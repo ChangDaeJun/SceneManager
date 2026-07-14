@@ -4,6 +4,7 @@
 //     <scene-name>  적용할 씬 이름 (AppData\SceneManager\scenes\{name}.json)
 //     --clean       실행 전 현재 보이는 창을 모두 닫아 빈 바탕화면부터 시작
 
+using SceneManager.Core.Models;
 using SceneManager.Core.Persistence;
 using SceneManager.Core.Platform;
 using SceneManager.Core.Services;
@@ -46,7 +47,7 @@ if (scene is null)
 var engine = new SceneRunner(
     repository,
     new WindowsDesktopManager(),
-    new ProcessFilterEvaluator(ProcessFilterEvaluator.CreateSystemDefault()));
+    ProcessFilter.CreateDefault());
 
 engine.ProgressChanged += (_, e) => Log($"  [{e.CurrentStep}/{e.TotalSteps}] {e.StepDescription}");
 

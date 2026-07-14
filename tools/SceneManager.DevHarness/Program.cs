@@ -72,7 +72,7 @@ static async Task SnapshotAsync(string name)
 {
     var snapshotService = new SceneSnapshot(
         new WindowsDesktopManager(),
-        new ProcessFilterEvaluator(ProcessFilterEvaluator.CreateSystemDefault()));
+        ProcessFilter.CreateDefault());
 
     var scene = await snapshotService.CaptureFullAsync(name);
 
@@ -133,7 +133,7 @@ static async Task ClearAsync()
 static SceneRunner CreateEngine(JsonSceneRepository repository) => new(
     repository,
     new WindowsDesktopManager(),
-    new ProcessFilterEvaluator(ProcessFilterEvaluator.CreateSystemDefault()));
+    ProcessFilter.CreateDefault());
 
 static async Task ListScenesAsync()
 {

@@ -10,9 +10,9 @@ namespace SceneManager.Core.Services;
 public sealed class SceneSnapshot : ISceneSnapshot
 {
     private readonly IDesktopManager _desktop;
-    private readonly ProcessFilterEvaluator _filter;
+    private readonly ProcessFilter _filter;
 
-    public SceneSnapshot(IDesktopManager desktop, ProcessFilterEvaluator filter)
+    public SceneSnapshot(IDesktopManager desktop, ProcessFilter filter)
     {
         _desktop = desktop;
         _filter = filter;

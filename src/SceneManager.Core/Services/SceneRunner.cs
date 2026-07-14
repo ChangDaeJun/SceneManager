@@ -12,12 +12,12 @@ public sealed class SceneRunner : ISceneRunner
 {
     private readonly ISceneRepository _repository;
     private readonly IDesktopManager _desktop;
-    private readonly ProcessFilterEvaluator _filter;
+    private readonly ProcessFilter _filter;
 
     public SceneRunner(
         ISceneRepository repository,
         IDesktopManager desktop,
-        ProcessFilterEvaluator filter)
+        ProcessFilter filter)
     {
         _repository = repository;
         _desktop = desktop;
