@@ -1,0 +1,65 @@
+<Window x:Class="SceneManager.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ctl="clr-namespace:SceneManager.Controls"
+        Title="SceneManager — 씬 편집기" Height="620" Width="960"
+        WindowStartupLocation="CenterScreen">
+    <DockPanel>
+        <!-- 툴바 -->
+        <Border DockPanel.Dock="Top" Padding="8" Background="#F3F4F6" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="📸 스냅샷" Command="{Binding SnapshotCommand}" Padding="10,4" Margin="0,0,8,0"/>
+                <Button Content="✏ 편집" Command="{Binding EditCommand}" Padding="10,4" Margin="0,0,8,0"/>
+                <Button Content="🗑 삭제" Command="{Binding DeleteCommand}" Padding="10,4" Margin="0,0,8,0"/>
+                <Button Content="🔗 바로가기 생성" Command="{Binding CreateShortcutCommand}" Padding="10,4"/>
+            </StackPanel>
+        </Border>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="240"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- 씬 목록 -->
+            <DockPanel Grid.Column="0" Margin="8">
+                <TextBlock DockPanel.Dock="Top" Text="씬 목록" FontWeight="Bold" Margin="2,0,0,6"/>
+                <ListBox ItemsSource="{Binding Scenes}"
+                         SelectedItem="{Binding SelectedScene}"
+                         DisplayMemberPath="Name"/>
+            </DockPanel>
+
+            <!-- 상세: 지도 + 프로그램 표 -->
+            <Grid Grid.Column="1" Margin="0,8,8,8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="2*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="3*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Text="화면 배치" FontWeight="Bold" Margin="2,0,0,6"/>
+                <Border Grid.Row="1" BorderBrush="#E5E7EB" BorderThickness="1" Background="White">
+                    <ctl:LayoutPreview Monitors="{Binding Monitors}" Scene="{Binding SelectedScene}"/>
+                </Border>
+
+                <TextBlock Grid.Row="2" Text="프로그램" FontWeight="Bold" Margin="2,10,0,6"/>
+                <DataGrid Grid.Row="3"
+                          ItemsSource="{Binding SelectedScene.Programs}"
+                          AutoGenerateColumns="False" IsReadOnly="True"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                          CanUserAddRows="False">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="이름" Binding="{Binding Name}" Width="120"/>
+                        <DataGridTextColumn Header="타입" Binding="{Binding Type}" Width="60"/>
+                        <DataGridTextColumn Header="X" Binding="{Binding Window.X}" Width="55"/>
+                        <DataGridTextColumn Header="Y" Binding="{Binding Window.Y}" Width="55"/>
+                        <DataGridTextColumn Header="W" Binding="{Binding Window.Width}" Width="55"/>
+                        <DataGridTextColumn Header="H" Binding="{Binding Window.Height}" Width="55"/>
+                        <DataGridTextColumn Header="실행 경로" Binding="{Binding ExecPath}" Width="*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</Window>

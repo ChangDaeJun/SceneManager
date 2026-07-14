@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/SceneManager/SceneManager.csproj" />
     <Project Path="src/SceneManager.Core/SceneManager.Core.csproj" />
     <Project Path="src/SceneRunner/SceneRunner.csproj" />
   </Folder>
