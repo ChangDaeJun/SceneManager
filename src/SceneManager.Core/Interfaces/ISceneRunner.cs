@@ -4,7 +4,7 @@ namespace SceneManager.Core.Interfaces;
 /// 씬 적용의 오케스트레이터. 검증 → 이전 씬 정리 → 프로그램 실행 → 창 배치 → 오디오 적용의
 /// 전체 흐름을 조율한다. 프로세스·윈도우·모니터·오디오 매니저를 조합해 동작한다.
 /// </summary>
-public interface ISceneEngine
+public interface ISceneRunner
 {
     /// <summary>씬을 적용한다(전체 플로우).</summary>
     Task<SceneApplyResult> ApplyAsync(string sceneId, CancellationToken cancellationToken = default);

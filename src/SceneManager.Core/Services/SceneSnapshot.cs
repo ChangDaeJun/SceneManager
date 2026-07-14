@@ -7,12 +7,12 @@ namespace SceneManager.Core.Services;
 /// 현재 보이는 창들을 필터링해 씬으로 캡처한다.
 /// v0: 프로그램 + 창 배치만 캡처(오디오·모니터 구성은 이후 단계).
 /// </summary>
-public sealed class SnapshotService : ISnapshotService
+public sealed class SceneSnapshot : ISceneSnapshot
 {
     private readonly IDesktopManager _desktop;
     private readonly ProcessFilterEvaluator _filter;
 
-    public SnapshotService(IDesktopManager desktop, ProcessFilterEvaluator filter)
+    public SceneSnapshot(IDesktopManager desktop, ProcessFilterEvaluator filter)
     {
         _desktop = desktop;
         _filter = filter;

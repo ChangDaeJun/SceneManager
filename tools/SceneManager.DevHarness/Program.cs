@@ -70,7 +70,7 @@ static void ListWindows()
 
 static async Task SnapshotAsync(string name)
 {
-    var snapshotService = new SnapshotService(
+    var snapshotService = new SceneSnapshot(
         new WindowsDesktopManager(),
         new ProcessFilterEvaluator(ProcessFilterEvaluator.CreateSystemDefault()));
 
@@ -130,7 +130,7 @@ static async Task ClearAsync()
     Console.WriteLine($"닫기 요청: {cleared}개 창");
 }
 
-static SceneEngine CreateEngine(JsonSceneRepository repository) => new(
+static SceneRunner CreateEngine(JsonSceneRepository repository) => new(
     repository,
     new WindowsDesktopManager(),
     new DependencyResolver(),

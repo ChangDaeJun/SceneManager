@@ -43,7 +43,7 @@ if (scene is null)
     return 2;
 }
 
-var engine = new SceneEngine(
+var engine = new SceneRunner(
     repository,
     new WindowsDesktopManager(),
     new DependencyResolver(),

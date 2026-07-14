@@ -8,14 +8,14 @@ namespace SceneManager.Core.Services;
 /// 씬 적용 오케스트레이터. 로드 → 의존성 순서 결정 → 실행 → 창 대기 → 배치.
 /// v0: 이전 씬 정리·오디오·모니터 매핑은 생략. 부분 실패를 허용한다.
 /// </summary>
-public sealed class SceneEngine : ISceneEngine
+public sealed class SceneRunner : ISceneRunner
 {
     private readonly ISceneRepository _repository;
     private readonly IDesktopManager _desktop;
     private readonly DependencyResolver _dependencyResolver;
     private readonly ProcessFilterEvaluator _filter;
 
-    public SceneEngine(
+    public SceneRunner(
         ISceneRepository repository,
         IDesktopManager desktop,
         DependencyResolver dependencyResolver,

@@ -5,7 +5,7 @@ namespace SceneManager.Core.Interfaces;
 /// <summary>
 /// 현재 데스크톱 상태(실행 중 프로그램·창 배치·오디오)를 캡처해 씬으로 만든다.
 /// </summary>
-public interface ISnapshotService
+public interface ISceneSnapshot
 {
     /// <summary>전체 스냅샷을 캡처한다(프로그램 + 창 배치 + 오디오).</summary>
     Task<Scene> CaptureFullAsync(string sceneName, CancellationToken cancellationToken = default);
