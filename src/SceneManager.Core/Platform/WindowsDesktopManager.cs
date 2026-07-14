@@ -63,9 +63,6 @@ public sealed class WindowsDesktopManager : IDesktopManager
         }
     }
 
-    public bool IsRunning(string processName)
-        => Process.GetProcessesByName(processName).Length > 0;
-
     // ────────────── 윈도우 ──────────────
 
     public List<WindowInfo> GetAllVisibleWindows()
@@ -119,9 +116,10 @@ public sealed class WindowsDesktopManager : IDesktopManager
                 return true; // 프로세스명조차 못 얻으면 스킵
             }
 
-            if (!GetWindowRect(hwnd, out var rect))
+            if (!GetWindowRect(hwnd, out var rawRect))
                 return true;
 
+            var state = GetWindowStateOf(hwnd);
             results.Add(new WindowInfo
             {
                 Handle = hwnd,
@@ -131,7 +129,7 @@ public sealed class WindowsDesktopManager : IDesktopManager
                 WindowClass = className,
                 ExecPath = execPath,
                 AppUserModelId = TryGetAumid((int)pid), // 스토어 앱이면 AUMID, 아니면 null
-                Placement = ToPlacement(rect, GetWindowStateOf(hwnd))
+                Placement = ToPlacement(VisibleRect(hwnd, rawRect, state), state)
             });
 
             return true; // 계속 열거
@@ -142,8 +140,40 @@ public sealed class WindowsDesktopManager : IDesktopManager
 
     public WindowPlacement GetPlacement(IntPtr hwnd)
     {
-        GetWindowRect(hwnd, out var rect);
-        return ToPlacement(rect, GetWindowStateOf(hwnd));
+        var state = GetWindowStateOf(hwnd);
+        GetWindowRect(hwnd, out var rawRect);
+        return ToPlacement(VisibleRect(hwnd, rawRect, state), state);
+    }
+
+    /// <summary>
+    /// "보이는 창"의 사각형을 돌려준다. Win32 창은 GetWindowRect가 비가시 리사이즈 테두리(~7px)를
+    /// 포함하므로 DWM 확장 프레임 경계로 실제 보이는 영역을 얻는다.
+    /// 최소화 창(−32000 sentinel 유지)이나 DWM 실패 시에는 원본 사각형을 쓴다.
+    /// </summary>
+    private static RECT VisibleRect(IntPtr hwnd, RECT rawRect, WindowState state)
+    {
+        if (state == WindowState.Minimized)
+            return rawRect;
+
+        if (DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, out RECT frame, Marshal.SizeOf<RECT>()) == 0
+            && frame.Right > frame.Left && frame.Bottom > frame.Top)
+            return frame;
+
+        return rawRect;
+    }
+
+    /// <summary>현재 창의 비가시 테두리 여백(좌·상·우·하). GetWindowRect와 DWM 프레임의 차이.</summary>
+    private static (int Left, int Top, int Right, int Bottom) GetFrameMargin(IntPtr hwnd)
+    {
+        if (!GetWindowRect(hwnd, out var win)
+            || DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS, out RECT frame, Marshal.SizeOf<RECT>()) != 0)
+            return (0, 0, 0, 0);
+
+        return (
+            frame.Left - win.Left,
+            frame.Top - win.Top,
+            win.Right - frame.Right,
+            win.Bottom - frame.Bottom);
     }
 
     /// <summary>창의 표시 상태(정상/최대화/최소화)를 GetWindowPlacement로 판별한다.</summary>
@@ -176,12 +206,16 @@ public sealed class WindowsDesktopManager : IDesktopManager
                 return;
         }
 
-        // Normal: 최대화/최소화 상태였다면 먼저 복원한 뒤 위치·크기 지정
+        // Normal: 최대화/최소화 상태였다면 먼저 복원한 뒤 위치·크기 지정.
         ShowWindow(hwnd, SW_RESTORE);
+
+        // placement는 "보이는 창" 기준이다. SetWindowPos는 GetWindowRect(비가시 테두리 포함)
+        // 공간에서 동작하므로, 현재 창의 테두리 여백만큼 바깥으로 확장해 보이는 가장자리가 목표에 오게 한다.
+        var (ml, mt, mr, mb) = GetFrameMargin(hwnd);
         SetWindowPos(
             hwnd, IntPtr.Zero,
-            (int)placement.X, (int)placement.Y,
-            (int)placement.Width, (int)placement.Height,
+            (int)placement.X - ml, (int)placement.Y - mt,
+            (int)placement.Width + ml + mr, (int)placement.Height + mt + mb,
             SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
@@ -246,7 +280,7 @@ public sealed class WindowsDesktopManager : IDesktopManager
     private static bool IsCloaked(IntPtr hwnd)
     {
         // DwmGetWindowAttribute 성공(0) 시 cloaked 값이 0이 아니면 가려진 상태.
-        var hr = DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, out var cloaked, sizeof(int));
+        var hr = DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, out int cloaked, sizeof(int));
         return hr == 0 && cloaked != 0;
     }
 
@@ -281,6 +315,7 @@ public sealed class WindowsDesktopManager : IDesktopManager
     // ────── P/Invoke ──────
     private const uint GW_OWNER = 4;
     private const int DWMWA_CLOAKED = 14;
+    private const int DWMWA_EXTENDED_FRAME_BOUNDS = 9;
 
     // ShowWindow 명령
     private const int SW_MAXIMIZE = 3;
@@ -330,6 +365,9 @@ public sealed class WindowsDesktopManager : IDesktopManager
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out int pvAttribute, int cbAttribute);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out RECT pvAttribute, int cbAttribute);
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hwnd, int nCmdShow);

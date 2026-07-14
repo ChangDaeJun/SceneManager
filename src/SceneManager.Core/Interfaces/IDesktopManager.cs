@@ -14,9 +14,6 @@ public interface IDesktopManager
     /// <summary>프로그램을 실행한다(Win32 + UWP 통합).</summary>
     Task<ProcessLaunchResult> LaunchAsync(ProgramEntry entry, CancellationToken cancellationToken = default);
 
-    /// <summary>특정 프로세스가 실행 중인지 확인한다.</summary>
-    bool IsRunning(string processName);
-
     // ────── 윈도우 ──────
 
     /// <summary>현재 보이는 모든 윈도우의 정보를 가져온다.</summary>

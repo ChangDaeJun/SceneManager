@@ -11,6 +11,7 @@
                 <Button Content="📸 스냅샷" Command="{Binding SnapshotCommand}" Padding="10,4" Margin="0,0,8,0"/>
                 <Button Content="✏ 편집" Command="{Binding EditCommand}" Padding="10,4" Margin="0,0,8,0"/>
                 <Button Content="🗑 삭제" Command="{Binding DeleteCommand}" Padding="10,4" Margin="0,0,8,0"/>
+                <Button Content="🧹 틈 메우기" Command="{Binding TidyLayoutCommand}" Padding="10,4" Margin="0,0,8,0"/>
                 <Button Content="🔗 바로가기 생성" Command="{Binding CreateShortcutCommand}" Padding="10,4"/>
             </StackPanel>
         </Border>

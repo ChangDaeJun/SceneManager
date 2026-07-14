@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SceneManager.Core.Interfaces;
 using SceneManager.Core.Models;
+using SceneManager.Core.Services;
 using SceneManager.Services;
 
 namespace SceneManager.ViewModels;
@@ -96,6 +97,24 @@ public partial class MainViewModel : ObservableObject
     private void Edit()
         => _dialogs.Info("씬 편집 화면은 2차에서 구현됩니다.", "편집");
 
+    /// <summary>선택 씬의 창들 사이 작은 틈·겹침을 모서리 정렬로 메운다.</summary>
+    [RelayCommand(CanExecute = nameof(HasSelection))]
+    private async Task TidyLayoutAsync()
+    {
+        var scene = SelectedScene!;
+        var changed = LayoutTidy.SnapGaps(scene, Monitors);
+        if (changed == 0)
+        {
+            _dialogs.Info("메울 만한 틈이 없습니다.", "틈 메우기");
+            return;
+        }
+
+        await _repository.SaveAsync(scene);
+        await LoadAsync();
+        SelectedScene = Scenes.FirstOrDefault(s => s.Id == scene.Id);
+        _dialogs.Info($"{changed}개 창의 위치를 정렬했습니다.", "틈 메우기");
+    }
+
     private bool HasSelection => SelectedScene is not null;
 
     partial void OnSelectedSceneChanged(Scene? value)
@@ -103,5 +122,6 @@ public partial class MainViewModel : ObservableObject
         DeleteCommand.NotifyCanExecuteChanged();
         CreateShortcutCommand.NotifyCanExecuteChanged();
         EditCommand.NotifyCanExecuteChanged();
+        TidyLayoutCommand.NotifyCanExecuteChanged();
     }
 }

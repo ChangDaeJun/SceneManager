@@ -52,6 +52,15 @@ switch (args[0].ToLowerInvariant())
         await ClearAsync();
         break;
 
+    case "tidy":
+        if (args.Length < 2)
+        {
+            Console.WriteLine("사용법: tidy <name> [--save]");
+            break;
+        }
+        await TidyAsync(args[1], save: args.Contains("--save"));
+        break;
+
     default:
         Console.WriteLine($"알 수 없는 명령: {args[0]}");
         PrintUsage();
@@ -135,6 +144,47 @@ static async Task ApplyAsync(string name, bool clean)
     }
 }
 
+static async Task TidyAsync(string name, bool save)
+{
+    var repository = new JsonSceneRepository(ScenesDirectory());
+    var scene = await repository.GetByNameAsync(name);
+    if (scene is null)
+    {
+        Console.WriteLine($"씬 '{name}'을(를) 찾을 수 없음.");
+        return;
+    }
+
+    var monitors = new WindowsDesktopManager().GetMonitorLayout();
+
+    string Rect(WindowPlacement? w) => w is null ? "(배치 없음)"
+        : $"({w.X},{w.Y}) {w.Width}x{w.Height}/{w.State}";
+
+    var before = scene.Programs.ToDictionary(
+        p => p.Id,
+        p => p.Window is null ? null : new WindowPlacement
+        {
+            MonitorId = p.Window.MonitorId, X = p.Window.X, Y = p.Window.Y,
+            Width = p.Window.Width, Height = p.Window.Height, State = p.Window.State,
+        });
+
+    var changed = LayoutTidy.SnapGaps(scene, monitors);
+
+    Console.WriteLine($"틈 메우기 결과 ({changed}개 창 변경){(save ? " [저장함]" : " [미리보기, 저장 안 함]")}:");
+    foreach (var p in scene.Programs.OrderBy(p => p.Order))
+    {
+        var b = before[p.Id];
+        var moved = b is null || p.Window is null
+            ? false
+            : b.X != p.Window.X || b.Y != p.Window.Y || b.Width != p.Window.Width || b.Height != p.Window.Height;
+        var mark = moved ? "→" : " ";
+        Console.WriteLine($"  {mark} [{p.Name,-12}] {Rect(b)}"
+            + (moved ? $"  ⇒  {Rect(p.Window)}" : ""));
+    }
+
+    if (save)
+        await repository.SaveAsync(scene);
+}
+
 static async Task ClearAsync()
 {
     var engine = CreateEngine(new JsonSceneRepository(ScenesDirectory()));
@@ -179,4 +229,5 @@ static void PrintUsage()
     Console.WriteLine("  list-scenes           저장된 씬 목록");
     Console.WriteLine("  apply <name> [--clean]  저장된 씬을 실행/배치 (--clean: 기존 창 먼저 정리)");
     Console.WriteLine("  clear                 현재 보이는 사용자 창을 모두 닫음(빈 바탕화면)");
+    Console.WriteLine("  tidy <name> [--save]  창 사이 작은 틈/겹침을 정렬(미리보기, --save로 저장)");
 }
