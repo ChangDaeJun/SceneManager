@@ -11,21 +11,18 @@ namespace SceneManager.Core.Services;
 public sealed class SceneEngine : ISceneEngine
 {
     private readonly ISceneRepository _repository;
-    private readonly IProcessManager _processManager;
-    private readonly IWindowManager _windowManager;
+    private readonly IDesktopManager _desktop;
     private readonly DependencyResolver _dependencyResolver;
     private readonly ProcessFilterEvaluator _filter;
 
     public SceneEngine(
         ISceneRepository repository,
-        IProcessManager processManager,
-        IWindowManager windowManager,
+        IDesktopManager desktop,
         DependencyResolver dependencyResolver,
         ProcessFilterEvaluator filter)
     {
         _repository = repository;
-        _processManager = processManager;
-        _windowManager = windowManager;
+        _desktop = desktop;
         _dependencyResolver = dependencyResolver;
         _filter = filter;
     }
@@ -78,7 +75,7 @@ public sealed class SceneEngine : ISceneEngine
         var self = Environment.ProcessId; // 자기 자신(러너)의 창은 닫지 않는다
         var closed = 0;
 
-        foreach (var window in _windowManager.GetAllVisibleWindows())
+        foreach (var window in _desktop.GetAllVisibleWindows())
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -87,7 +84,7 @@ public sealed class SceneEngine : ISceneEngine
             if (!_filter.ShouldInclude(window.ProcessName))
                 continue; // 시스템/셸 프로세스는 건드리지 않음
 
-            _windowManager.CloseWindow(window.Handle);
+            _desktop.CloseWindow(window.Handle);
             closed++;
         }
 
@@ -111,7 +108,7 @@ public sealed class SceneEngine : ISceneEngine
 
         if (!alreadyRunning)
         {
-            var launch = await _processManager.LaunchAsync(program, cancellationToken);
+            var launch = await _desktop.LaunchAsync(program, cancellationToken);
             if (!launch.Success)
             {
                 step.Success = false;
@@ -154,7 +151,7 @@ public sealed class SceneEngine : ISceneEngine
             var hwnd = FindMainWindow(processName);
             if (hwnd != IntPtr.Zero)
             {
-                var current = _windowManager.GetPlacement(hwnd);
+                var current = _desktop.GetPlacement(hwnd);
                 if (IsAtTarget(current, target))
                 {
                     if (++stableCount >= StableChecksNeeded)
@@ -162,7 +159,7 @@ public sealed class SceneEngine : ISceneEngine
                 }
                 else
                 {
-                    _windowManager.SetPlacement(hwnd, target); // 어긋남(또는 첫 배치) → 다시 배치
+                    _desktop.SetPlacement(hwnd, target); // 어긋남(또는 첫 배치) → 다시 배치
                     stableCount = 0;
                 }
             }
@@ -176,7 +173,7 @@ public sealed class SceneEngine : ISceneEngine
     /// <summary>프로세스의 메인 창 = 같은 이름의 보이는 창 중 면적이 가장 큰 것(스플래시 제외).</summary>
     private IntPtr FindMainWindow(string processName)
     {
-        var main = _windowManager.GetAllVisibleWindows()
+        var main = _desktop.GetAllVisibleWindows()
             .Where(w => string.Equals(w.ProcessName, processName, StringComparison.OrdinalIgnoreCase))
             .OrderByDescending(w => w.Placement.Width * w.Placement.Height)
             .FirstOrDefault();

@@ -45,8 +45,7 @@ if (scene is null)
 
 var engine = new SceneEngine(
     repository,
-    new WindowsProcessManager(),
-    new WindowsWindowManager(),
+    new WindowsDesktopManager(),
     new DependencyResolver(),
     new ProcessFilterEvaluator(ProcessFilterEvaluator.CreateSystemDefault()));
 

@@ -56,8 +56,8 @@ switch (args[0].ToLowerInvariant())
 
 static void ListWindows()
 {
-    var windowManager = new WindowsWindowManager();
-    var windows = windowManager.GetAllVisibleWindows();
+    var desktop = new WindowsDesktopManager();
+    var windows = desktop.GetAllVisibleWindows();
 
     Console.WriteLine($"보이는 창 {windows.Count}개:");
     foreach (var w in windows.OrderBy(w => w.ProcessName, StringComparer.OrdinalIgnoreCase))
@@ -71,7 +71,7 @@ static void ListWindows()
 static async Task SnapshotAsync(string name)
 {
     var snapshotService = new SnapshotService(
-        new WindowsWindowManager(),
+        new WindowsDesktopManager(),
         new ProcessFilterEvaluator(ProcessFilterEvaluator.CreateSystemDefault()));
 
     var scene = await snapshotService.CaptureFullAsync(name);
@@ -132,8 +132,7 @@ static async Task ClearAsync()
 
 static SceneEngine CreateEngine(JsonSceneRepository repository) => new(
     repository,
-    new WindowsProcessManager(),
-    new WindowsWindowManager(),
+    new WindowsDesktopManager(),
     new DependencyResolver(),
     new ProcessFilterEvaluator(ProcessFilterEvaluator.CreateSystemDefault()));
 

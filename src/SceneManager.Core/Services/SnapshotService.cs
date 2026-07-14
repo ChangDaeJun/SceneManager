@@ -9,12 +9,12 @@ namespace SceneManager.Core.Services;
 /// </summary>
 public sealed class SnapshotService : ISnapshotService
 {
-    private readonly IWindowManager _windowManager;
+    private readonly IDesktopManager _desktop;
     private readonly ProcessFilterEvaluator _filter;
 
-    public SnapshotService(IWindowManager windowManager, ProcessFilterEvaluator filter)
+    public SnapshotService(IDesktopManager desktop, ProcessFilterEvaluator filter)
     {
-        _windowManager = windowManager;
+        _desktop = desktop;
         _filter = filter;
     }
 
@@ -23,7 +23,7 @@ public sealed class SnapshotService : ISnapshotService
 
     public Task<Scene> CapturePartialAsync(string sceneName, SnapshotOptions options, CancellationToken cancellationToken = default)
     {
-        var windows = _windowManager.GetAllVisibleWindows();
+        var windows = _desktop.GetAllVisibleWindows();
         var programs = new List<ProgramEntry>();
         var order = 0;
 
