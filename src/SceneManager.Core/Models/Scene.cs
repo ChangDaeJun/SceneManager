@@ -35,9 +35,6 @@ public sealed class Scene
     /// <summary>할당된 글로벌 단축키. 예: <c>Ctrl+Alt+1</c>. 없으면 null.</summary>
     public string? Hotkey { get; set; }
 
-    /// <summary>씬 전환 시 이전 씬의 프로그램을 종료할지 여부.</summary>
-    public bool ClosePreviousScene { get; set; } = true;
-
     /// <summary>실행 대상 프로그램 목록.</summary>
     public List<ProgramEntry> Programs { get; set; } = [];
 

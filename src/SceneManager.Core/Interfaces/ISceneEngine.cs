@@ -16,9 +16,6 @@ public interface ISceneEngine
     /// </summary>
     Task<int> ClearAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>현재 적용 중인 씬의 ID. 적용된 씬이 없으면 null.</summary>
-    string? CurrentSceneId { get; }
-
     /// <summary>씬 적용 진행 상황이 갱신될 때 발생한다.</summary>
     event EventHandler<SceneProgressEventArgs> ProgressChanged;
 }

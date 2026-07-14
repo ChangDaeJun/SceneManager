@@ -81,31 +81,6 @@ public sealed class WindowsWindowManager : IWindowManager
     public void CloseWindow(IntPtr hwnd)
         => PostMessage(hwnd, WM_CLOSE, IntPtr.Zero, IntPtr.Zero); // 큐에 넣고 즉시 반환(비차단)
 
-    public async Task<IntPtr> WaitForWindowAsync(int processId, int timeoutMs = 10000, CancellationToken cancellationToken = default)
-    {
-        var sw = Stopwatch.StartNew();
-        while (sw.ElapsedMilliseconds < timeoutMs)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            try
-            {
-                using var proc = Process.GetProcessById(processId);
-                proc.Refresh(); // MainWindowHandle 캐시 갱신
-                if (proc.MainWindowHandle != IntPtr.Zero)
-                    return proc.MainWindowHandle;
-            }
-            catch (ArgumentException)
-            {
-                return IntPtr.Zero; // 프로세스가 이미 종료됨
-            }
-
-            await Task.Delay(PollIntervalMs, cancellationToken);
-        }
-
-        return IntPtr.Zero; // 타임아웃
-    }
-
     public void SetPlacement(IntPtr hwnd, WindowPlacement placement)
     {
         switch (placement.State)
@@ -161,8 +136,6 @@ public sealed class WindowsWindowManager : IWindowManager
         var hr = DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, out var cloaked, sizeof(int));
         return hr == 0 && cloaked != 0;
     }
-
-    private const int PollIntervalMs = 100;
 
     // ────── P/Invoke ──────
     private const uint GW_OWNER = 4;

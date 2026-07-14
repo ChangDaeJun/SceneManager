@@ -50,9 +50,6 @@ public sealed class ProgramEntry
     /// <summary>선행 실행되어야 하는 프로그램의 <see cref="Id"/>. 없으면 null.</summary>
     public string? DependsOnId { get; set; }
 
-    /// <summary>씬 전환 시 이 프로그램을 종료할지 여부.</summary>
-    public bool CloseOnSceneExit { get; set; } = true;
-
     /// <summary>관리자 권한으로 실행해야 하는지 여부. true면 UAC 승격 요청.</summary>
     public bool RequiresAdmin { get; set; }
 

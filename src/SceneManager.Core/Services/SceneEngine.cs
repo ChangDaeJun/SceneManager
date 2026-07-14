@@ -30,8 +30,6 @@ public sealed class SceneEngine : ISceneEngine
         _filter = filter;
     }
 
-    public string? CurrentSceneId { get; private set; }
-
     public event EventHandler<SceneProgressEventArgs>? ProgressChanged;
 
     public async Task<SceneApplyResult> ApplyAsync(string sceneId, CancellationToken cancellationToken = default)
@@ -71,7 +69,6 @@ public sealed class SceneEngine : ISceneEngine
             }
         }
 
-        CurrentSceneId = sceneId;
         result.Elapsed = stopwatch.Elapsed;
         return result;
     }

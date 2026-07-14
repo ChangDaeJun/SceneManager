@@ -8,12 +8,6 @@ namespace SceneManager.Core.Interfaces;
 /// </summary>
 public interface IWindowManager
 {
-    /// <summary>
-    /// 특정 프로세스의 메인 윈도우 핸들이 생성될 때까지 폴링하며 대기한다.
-    /// 타임아웃 시 <see cref="IntPtr.Zero"/>를 반환한다.
-    /// </summary>
-    Task<IntPtr> WaitForWindowAsync(int processId, int timeoutMs = 10000, CancellationToken cancellationToken = default);
-
     /// <summary>윈도우의 현재 배치 정보를 읽는다(논리 픽셀).</summary>
     WindowPlacement GetPlacement(IntPtr hwnd);
 
