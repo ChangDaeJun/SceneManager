@@ -44,14 +44,23 @@ public sealed class WindowsWindowManager : IWindowManager
                 return true;
 
             string processName;
+            string? execPath = null;
             try
             {
                 using var proc = Process.GetProcessById((int)pid);
                 processName = proc.ProcessName;
+                try
+                {
+                    execPath = proc.MainModule?.FileName; // 보호/승격 프로세스는 실패 → null 유지
+                }
+                catch
+                {
+                    // 실행 경로를 못 구해도 창 자체는 유효하므로 계속 진행
+                }
             }
             catch
             {
-                return true; // 접근 불가 프로세스는 스킵
+                return true; // 프로세스명조차 못 얻으면 스킵
             }
 
             if (!GetWindowRect(hwnd, out var rect))
@@ -63,6 +72,8 @@ public sealed class WindowsWindowManager : IWindowManager
                 ProcessId = (int)pid,
                 ProcessName = processName,
                 WindowTitle = title,
+                ExecPath = execPath,
+                AppUserModelId = TryGetAumid((int)pid), // 스토어 앱이면 AUMID, 아니면 null
                 Placement = ToPlacement(rect)
             });
 
@@ -137,6 +148,34 @@ public sealed class WindowsWindowManager : IWindowManager
         return hr == 0 && cloaked != 0;
     }
 
+    /// <summary>
+    /// 실행 중 프로세스의 AUMID(Application User Model ID)를 얻는다.
+    /// 패키지(UWP/MSIX) 앱이 아니거나 접근 불가면 null.
+    /// </summary>
+    private static string? TryGetAumid(int processId)
+    {
+        var handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, processId);
+        if (handle == IntPtr.Zero)
+            return null;
+
+        try
+        {
+            uint length = 0;
+            // 1차: 길이만 조회(버퍼 null). 패키지 앱이면 ERROR_INSUFFICIENT_BUFFER + 필요 길이.
+            var rc = GetApplicationUserModelId(handle, ref length, null);
+            if (rc != ERROR_INSUFFICIENT_BUFFER || length == 0)
+                return null; // 패키지 앱 아님(ERROR_NO_APPLICATION 등)
+
+            var buffer = new StringBuilder((int)length);
+            rc = GetApplicationUserModelId(handle, ref length, buffer);
+            return rc == ERROR_SUCCESS ? buffer.ToString() : null;
+        }
+        finally
+        {
+            CloseHandle(handle);
+        }
+    }
+
     // ────── P/Invoke ──────
     private const uint GW_OWNER = 4;
     private const int DWMWA_CLOAKED = 14;
@@ -151,6 +190,11 @@ public sealed class WindowsWindowManager : IWindowManager
     private const uint SWP_NOACTIVATE = 0x0010; // 활성화(포커스) 안 함
 
     private const uint WM_CLOSE = 0x0010;
+
+    // AUMID 조회(kernel32)
+    private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+    private const int ERROR_SUCCESS = 0;
+    private const int ERROR_INSUFFICIENT_BUFFER = 122;
 
     private delegate bool EnumWindowsProc(IntPtr hwnd, IntPtr lParam);
 
@@ -189,6 +233,15 @@ public sealed class WindowsWindowManager : IWindowManager
 
     [DllImport("user32.dll")]
     private static extern bool PostMessage(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("kernel32.dll")]
+    private static extern IntPtr OpenProcess(uint desiredAccess, bool inheritHandle, int processId);
+
+    [DllImport("kernel32.dll")]
+    private static extern bool CloseHandle(IntPtr handle);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    private static extern int GetApplicationUserModelId(IntPtr hProcess, ref uint applicationUserModelIdLength, StringBuilder? applicationUserModelId);
 
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT

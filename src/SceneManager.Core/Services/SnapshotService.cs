@@ -1,7 +1,5 @@
-using System.Diagnostics;
 using SceneManager.Core.Interfaces;
 using SceneManager.Core.Models;
-using SceneManager.Core.Platform;
 
 namespace SceneManager.Core.Services;
 
@@ -37,20 +35,17 @@ public sealed class SnapshotService : ISnapshotService
                 continue;
 
             // 실행 경로를 못 구하면 되살릴 수 없으므로 제외.
-            var execPath = TryGetExecPath(w.ProcessId);
-            if (execPath is null)
+            if (w.ExecPath is null)
                 continue;
-
-            // 스토어(UWP/MSIX) 앱이면 AUMID로 실행해야 하므로 Uwp 타입으로 기록한다.
-            var aumid = PackagedApps.TryGetAumid(w.ProcessId);
 
             programs.Add(new ProgramEntry
             {
                 Id = Guid.NewGuid().ToString(),
                 Name = w.ProcessName,
-                ExecPath = execPath,
-                Type = aumid is null ? ProgramType.Win32 : ProgramType.Uwp,
-                AppUserModelId = aumid,
+                ExecPath = w.ExecPath,
+                // 스토어(UWP/MSIX) 앱이면 AUMID로 실행해야 하므로 Uwp 타입으로 기록한다.
+                Type = w.AppUserModelId is null ? ProgramType.Win32 : ProgramType.Uwp,
+                AppUserModelId = w.AppUserModelId,
                 Order = order++,
                 Window = options.CaptureWindowPlacement ? w.Placement : null,
             });
@@ -66,19 +61,5 @@ public sealed class SnapshotService : ISnapshotService
         };
 
         return Task.FromResult(scene);
-    }
-
-    /// <summary>PID로 실행 파일 경로를 얻는다. 접근 불가(권한/스토어 앱 등)면 null.</summary>
-    private static string? TryGetExecPath(int processId)
-    {
-        try
-        {
-            using var proc = Process.GetProcessById(processId);
-            return proc.MainModule?.FileName;
-        }
-        catch
-        {
-            return null;
-        }
     }
 }

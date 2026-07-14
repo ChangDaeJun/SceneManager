@@ -41,6 +41,12 @@ public sealed class WindowInfo
     /// <summary>윈도우 제목. 제목이 없으면 빈 문자열.</summary>
     public required string WindowTitle { get; set; }
 
+    /// <summary>실행 파일 경로. 접근 불가(보호/승격 프로세스) 시 null.</summary>
+    public string? ExecPath { get; set; }
+
+    /// <summary>스토어(UWP/MSIX) 앱의 AUMID. Win32 앱은 null.</summary>
+    public string? AppUserModelId { get; set; }
+
     /// <summary>현재 배치 정보(논리 픽셀).</summary>
     public required WindowPlacement Placement { get; set; }
 }
