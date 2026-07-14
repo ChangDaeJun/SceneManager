@@ -72,7 +72,7 @@ static async Task SnapshotAsync(string name)
 {
     var snapshotService = new SceneSnapshot(
         new WindowsDesktopManager(),
-        ProcessFilter.CreateDefault());
+        LoadFilter());
 
     var scene = await snapshotService.CaptureFullAsync(name);
 
@@ -148,6 +148,12 @@ static async Task ListScenesAsync()
 static string ScenesDirectory() => System.IO.Path.Combine(
     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
     "SceneManager", "scenes");
+
+static ProcessFilter LoadFilter() => new JsonProcessFilterRepository(
+    System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "SceneManager", "process-filter.json"))
+    .LoadOrCreateDefault();
 
 static string Truncate(string s, int max) => s.Length <= max ? s : s[..(max - 1)] + "…";
 

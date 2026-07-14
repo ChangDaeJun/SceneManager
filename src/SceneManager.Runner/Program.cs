@@ -44,10 +44,13 @@ if (scene is null)
     return 2;
 }
 
+var filter = new JsonProcessFilterRepository(Path.Combine(baseDir, "process-filter.json"))
+    .LoadOrCreateDefault();
+
 var engine = new SceneRunner(
     repository,
     new WindowsDesktopManager(),
-    ProcessFilter.CreateDefault());
+    filter);
 
 engine.ProgressChanged += (_, e) => Log($"  [{e.CurrentStep}/{e.TotalSteps}] {e.StepDescription}");
 
