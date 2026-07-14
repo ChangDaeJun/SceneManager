@@ -4,9 +4,9 @@ namespace SceneManager.Core.Services;
 
 /// <summary>
 /// 프로그램 간 의존성(<see cref="ProgramEntry.DependsOnId"/>)을 위상 정렬해
-/// 실행 순서를 결정한다. 순수 알고리즘이며 부작용이 없다.
+/// 실행 순서를 결정한다. 상태 없는 순수 알고리즘이라 정적 유틸로 제공한다.
 /// </summary>
-public sealed class DependencyResolver
+public static class DependencyResolver
 {
     /// <summary>
     /// 프로그램들을 실행 그룹의 순차 목록으로 변환한다.
@@ -15,7 +15,7 @@ public sealed class DependencyResolver
     /// 존재하지 않는 <see cref="ProgramEntry.DependsOnId"/>는 의존 없음으로 취급한다.
     /// </summary>
     /// <exception cref="CircularDependencyException">순환 의존성이 있을 때.</exception>
-    public List<List<ProgramEntry>> Resolve(IReadOnlyList<ProgramEntry> programs)
+    public static List<List<ProgramEntry>> Resolve(IReadOnlyList<ProgramEntry> programs)
     {
         var result = new List<List<ProgramEntry>>();
         if (programs.Count == 0)

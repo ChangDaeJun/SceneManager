@@ -133,7 +133,6 @@ static async Task ClearAsync()
 static SceneRunner CreateEngine(JsonSceneRepository repository) => new(
     repository,
     new WindowsDesktopManager(),
-    new DependencyResolver(),
     new ProcessFilterEvaluator(ProcessFilterEvaluator.CreateSystemDefault()));
 
 static async Task ListScenesAsync()

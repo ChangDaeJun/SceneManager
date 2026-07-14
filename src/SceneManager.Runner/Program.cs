@@ -46,7 +46,6 @@ if (scene is null)
 var engine = new SceneRunner(
     repository,
     new WindowsDesktopManager(),
-    new DependencyResolver(),
     new ProcessFilterEvaluator(ProcessFilterEvaluator.CreateSystemDefault()));
 
 engine.ProgressChanged += (_, e) => Log($"  [{e.CurrentStep}/{e.TotalSteps}] {e.StepDescription}");

@@ -12,18 +12,15 @@ public sealed class SceneRunner : ISceneRunner
 {
     private readonly ISceneRepository _repository;
     private readonly IDesktopManager _desktop;
-    private readonly DependencyResolver _dependencyResolver;
     private readonly ProcessFilterEvaluator _filter;
 
     public SceneRunner(
         ISceneRepository repository,
         IDesktopManager desktop,
-        DependencyResolver dependencyResolver,
         ProcessFilterEvaluator filter)
     {
         _repository = repository;
         _desktop = desktop;
-        _dependencyResolver = dependencyResolver;
         _filter = filter;
     }
 
@@ -44,7 +41,7 @@ public sealed class SceneRunner : ISceneRunner
         }
 
         // 의존성 순서대로 그룹화(같은 그룹은 병렬 가능하지만 v0는 순차 실행).
-        var levels = _dependencyResolver.Resolve(scene.Programs);
+        var levels = DependencyResolver.Resolve(scene.Programs);
         var totalSteps = scene.Programs.Count;
         var currentStep = 0;
 
