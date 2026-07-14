@@ -130,7 +130,7 @@ public sealed class WindowsDesktopManager : IDesktopManager
                 WindowTitle = title,
                 ExecPath = execPath,
                 AppUserModelId = TryGetAumid((int)pid), // 스토어 앱이면 AUMID, 아니면 null
-                Placement = ToPlacement(rect)
+                Placement = ToPlacement(rect, GetWindowStateOf(hwnd))
             });
 
             return true; // 계속 열거
@@ -142,7 +142,22 @@ public sealed class WindowsDesktopManager : IDesktopManager
     public WindowPlacement GetPlacement(IntPtr hwnd)
     {
         GetWindowRect(hwnd, out var rect);
-        return ToPlacement(rect);
+        return ToPlacement(rect, GetWindowStateOf(hwnd));
+    }
+
+    /// <summary>창의 표시 상태(정상/최대화/최소화)를 GetWindowPlacement로 판별한다.</summary>
+    private static WindowState GetWindowStateOf(IntPtr hwnd)
+    {
+        var wp = new WINDOWPLACEMENT { length = Marshal.SizeOf<WINDOWPLACEMENT>() };
+        if (!GetWindowPlacement(hwnd, ref wp))
+            return WindowState.Normal;
+
+        return wp.showCmd switch
+        {
+            SW_SHOWMINIMIZED => WindowState.Minimized,
+            SW_SHOWMAXIMIZED => WindowState.Maximized,
+            _ => WindowState.Normal,
+        };
     }
 
     public void CloseWindow(IntPtr hwnd)
@@ -199,14 +214,14 @@ public sealed class WindowsDesktopManager : IDesktopManager
         return new MonitorLayout { Monitors = monitors };
     }
 
-    private static WindowPlacement ToPlacement(RECT rect) => new()
+    private static WindowPlacement ToPlacement(RECT rect, WindowState state) => new()
     {
         MonitorId = "primary", // v0: 모니터 매핑 생략
         X = rect.Left,
         Y = rect.Top,
         Width = rect.Right - rect.Left,
         Height = rect.Bottom - rect.Top,
-        State = WindowState.Normal
+        State = state
     };
 
     private static string GetWindowTextString(IntPtr hwnd)
@@ -271,6 +286,10 @@ public sealed class WindowsDesktopManager : IDesktopManager
     private const int SW_MINIMIZE = 6;
     private const int SW_RESTORE = 9;
 
+    // GetWindowPlacement.showCmd 값
+    private const int SW_SHOWMINIMIZED = 2;
+    private const int SW_SHOWMAXIMIZED = 3;
+
     // SetWindowPos 플래그
     private const uint SWP_NOZORDER = 0x0004;   // Z-순서 유지
     private const uint SWP_NOACTIVATE = 0x0010; // 활성화(포커스) 안 함
@@ -318,6 +337,9 @@ public sealed class WindowsDesktopManager : IDesktopManager
     private static extern bool SetWindowPos(IntPtr hwnd, IntPtr hwndInsertAfter, int x, int y, int cx, int cy, uint uFlags);
 
     [DllImport("user32.dll")]
+    private static extern bool GetWindowPlacement(IntPtr hwnd, ref WINDOWPLACEMENT lpwndpl);
+
+    [DllImport("user32.dll")]
     private static extern bool PostMessage(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam);
 
     [DllImport("kernel32.dll")]
@@ -346,6 +368,24 @@ public sealed class WindowsDesktopManager : IDesktopManager
         public int Top;
         public int Right;
         public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct WINDOWPLACEMENT
+    {
+        public int length;
+        public int flags;
+        public int showCmd;
+        public POINT ptMinPosition;
+        public POINT ptMaxPosition;
+        public RECT rcNormalPosition;
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

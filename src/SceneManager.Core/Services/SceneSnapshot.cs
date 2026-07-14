@@ -35,6 +35,10 @@ public sealed class SceneSnapshot : ISceneSnapshot
             if (w.ProcessId == self)
                 continue;
 
+            // 최소화된 창은 화면 배치 대상이 아니므로 제외(좌표가 -32000 sentinel).
+            if (w.Placement.State == WindowState.Minimized)
+                continue;
+
             if (!_filter.ShouldInclude(w.ProcessName))
                 continue;
 

@@ -42,6 +42,10 @@ public sealed class LayoutPreview : Canvas
     private static void OnChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((LayoutPreview)d).Redraw();
 
+    /// <summary>최소화(또는 -32000 sentinel) 창은 배치 지도에서 제외한다.</summary>
+    private static bool IsOnScreen(WindowPlacement w)
+        => w.State != Core.Models.WindowState.Minimized && w.X > -30000 && w.Y > -30000;
+
     private void Redraw()
     {
         Children.Clear();
@@ -51,7 +55,9 @@ public sealed class LayoutPreview : Canvas
             return;
 
         var monitors = Monitors?.Monitors ?? new List<MonitorInfo>();
-        var programs = Scene?.Programs.Where(p => p.Window is not null).ToList() ?? new List<ProgramEntry>();
+        var programs = Scene?.Programs
+            .Where(p => p.Window is not null && IsOnScreen(p.Window!))
+            .ToList() ?? new List<ProgramEntry>();
         if (monitors.Count == 0 && programs.Count == 0)
             return;
 
