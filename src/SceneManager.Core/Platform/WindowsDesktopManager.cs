@@ -219,6 +219,13 @@ public sealed class WindowsDesktopManager : IDesktopManager
             SWP_NOZORDER | SWP_NOACTIVATE);
     }
 
+    public void SetCornerPreference(IntPtr hwnd, bool square)
+    {
+        // DWMWCP_DONOTROUND(1) = 각짐, DWMWCP_DEFAULT(0) = 시스템 기본(둥글게).
+        var preference = square ? DWMWCP_DONOTROUND : DWMWCP_DEFAULT;
+        DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, ref preference, sizeof(int));
+    }
+
     public MonitorLayout GetMonitorLayout()
     {
         var monitors = new List<MonitorInfo>();
@@ -316,6 +323,9 @@ public sealed class WindowsDesktopManager : IDesktopManager
     private const uint GW_OWNER = 4;
     private const int DWMWA_CLOAKED = 14;
     private const int DWMWA_EXTENDED_FRAME_BOUNDS = 9;
+    private const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+    private const int DWMWCP_DEFAULT = 0;
+    private const int DWMWCP_DONOTROUND = 1;
 
     // ShowWindow 명령
     private const int SW_MAXIMIZE = 3;
@@ -368,6 +378,9 @@ public sealed class WindowsDesktopManager : IDesktopManager
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmGetWindowAttribute(IntPtr hwnd, int dwAttribute, out RECT pvAttribute, int cbAttribute);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hwnd, int nCmdShow);

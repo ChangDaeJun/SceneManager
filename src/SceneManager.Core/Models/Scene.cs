@@ -35,6 +35,12 @@ public sealed class Scene
     /// <summary>할당된 글로벌 단축키. 예: <c>Ctrl+Alt+1</c>. 없으면 null.</summary>
     public string? Hotkey { get; set; }
 
+    /// <summary>
+    /// true면 씬 적용 시 창 모서리를 각지게(둥근 모서리 제거) 처리한다. 스냅처럼 창을 딱 붙여
+    /// 타일링할 때 Windows 11의 둥근 모서리 홈을 없앤다. Windows 10에서는 무시된다.
+    /// </summary>
+    public bool SquareCorners { get; set; }
+
     /// <summary>실행 대상 프로그램 목록.</summary>
     public List<ProgramEntry> Programs { get; set; } = [];
 

@@ -61,9 +61,15 @@ public partial class MainViewModel : ObservableObject
             return;
 
         var scene = await _snapshot.CaptureFullAsync(name);
-        await _repository.SaveAsync(scene);
 
-        Monitors = _desktop.GetMonitorLayout(); // 캡처 시점 구성 반영
+        Monitors = _desktop.GetMonitorLayout(); // 캡처 시점 구성 반영(미세조정 지도용)
+
+        // 미세조정 창: 방금 캡처한 창들이 살아있으므로 좌표 조정이 실제 창에 즉시 반영된다.
+        // 확인 시에만 저장하고, 취소하면 저장하지 않는다.
+        if (!_dialogs.ShowSnapshotFineTune(scene, Monitors, _desktop))
+            return;
+
+        await _repository.SaveAsync(scene);
         await LoadAsync();
         SelectedScene = Scenes.FirstOrDefault(
             s => string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase));

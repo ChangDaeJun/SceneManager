@@ -1,4 +1,7 @@
 using System.Windows;
+using SceneManager.Core.Interfaces;
+using SceneManager.Core.Models;
+using SceneManager.ViewModels;
 using SceneManager.Views;
 
 namespace SceneManager.Services;
@@ -10,6 +13,13 @@ public sealed class DialogService : IDialogService
     {
         var dialog = new SnapshotNameDialog(initial) { Owner = Application.Current.MainWindow };
         return dialog.ShowDialog() == true ? dialog.SceneName : null;
+    }
+
+    public bool ShowSnapshotFineTune(Scene scene, MonitorLayout monitors, IDesktopManager desktop)
+    {
+        var viewModel = new SnapshotFineTuneViewModel(scene, monitors, desktop);
+        var window = new SnapshotFineTuneWindow(viewModel) { Owner = Application.Current.MainWindow };
+        return window.ShowDialog() == true;
     }
 
     public bool Confirm(string message, string title)

@@ -26,6 +26,12 @@ public interface IDesktopManager
     void SetPlacement(IntPtr hwnd, WindowPlacement placement);
 
     /// <summary>
+    /// 창 모서리를 각지게(square=true, 둥근 모서리 제거) 또는 기본값(false)으로 설정한다.
+    /// Windows 11 전용(DWM). Windows 10에서는 무시된다.
+    /// </summary>
+    void SetCornerPreference(IntPtr hwnd, bool square);
+
+    /// <summary>
     /// 윈도우에 닫기(WM_CLOSE)를 요청한다. 사용자가 X를 누른 것과 동일하며,
     /// 앱이 저장 대화상자를 띄울 수 있다(강제 종료 아님). 프로세스는 죽이지 않는다.
     /// </summary>

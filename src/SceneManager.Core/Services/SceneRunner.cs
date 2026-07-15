@@ -21,6 +21,9 @@ public sealed class SceneRunner : ISceneRunner
     // 구분하고 "가장 큰 창" 폴백을 쓰지 않는다(형제 문서 창을 잘못 잡는 것 방지).
     private readonly Dictionary<string, int> _entryCountByProcess = new(StringComparer.OrdinalIgnoreCase);
 
+    // 이번 적용에서 배치한 창의 모서리를 각지게 처리할지(씬 옵션).
+    private bool _squareCorners;
+
     public SceneRunner(
         ISceneRepository repository,
         IDesktopManager desktop,
@@ -47,6 +50,8 @@ public sealed class SceneRunner : ISceneRunner
             result.Elapsed = stopwatch.Elapsed;
             return result;
         }
+
+        _squareCorners = scene.SquareCorners;
 
         // 같은 프로세스로 등록된 항목 수 집계(창 매칭 폴백 정책에 사용).
         _entryCountByProcess.Clear();
@@ -153,6 +158,9 @@ public sealed class SceneRunner : ISceneRunner
 
         // 이 창을 이 항목에 배정(같은 프로세스의 다른 항목이 다시 잡지 못하도록).
         _claimed.Add(target!.Handle);
+
+        if (_squareCorners)
+            _desktop.SetCornerPreference(target.Handle, true);
 
         if (program.Window is null)
             return step; // 이미 실행 중 + 배치 없음

@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using SceneManager.Core.Models;
@@ -8,10 +9,14 @@ namespace SceneManager.Controls;
 
 /// <summary>
 /// 모니터 구성과 씬의 프로그램 창 배치를 물리 px 바운딩 박스 기준으로 비례 축소해 그린다.
-/// 모니터는 외곽선, 프로그램은 채운 사각형 + 이름 라벨.
+/// 모니터는 외곽선, 프로그램은 채운 사각형 + 이름 라벨. 프로그램 사각형은 클릭해 선택할 수 있고,
+/// 선택된 항목은 빨간 테두리로 강조된다(<see cref="SelectedProgram"/> 양방향).
 /// </summary>
 public sealed class LayoutPreview : Canvas
 {
+    // 그린 프로그램 사각형의 화면 좌표 → 어떤 프로그램인지(클릭 히트테스트용). 위에 그린 것이 나중.
+    private readonly List<(ProgramEntry Entry, Rect Bounds)> _hitTargets = new();
+
     public static readonly DependencyProperty MonitorsProperty =
         DependencyProperty.Register(nameof(Monitors), typeof(MonitorLayout), typeof(LayoutPreview),
             new PropertyMetadata(null, OnChanged));
@@ -19,6 +24,11 @@ public sealed class LayoutPreview : Canvas
     public static readonly DependencyProperty SceneProperty =
         DependencyProperty.Register(nameof(Scene), typeof(Scene), typeof(LayoutPreview),
             new PropertyMetadata(null, OnChanged));
+
+    public static readonly DependencyProperty SelectedProgramProperty =
+        DependencyProperty.Register(nameof(SelectedProgram), typeof(ProgramEntry), typeof(LayoutPreview),
+            new FrameworkPropertyMetadata(null,
+                FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnChanged));
 
     public MonitorLayout? Monitors
     {
@@ -32,15 +42,42 @@ public sealed class LayoutPreview : Canvas
         set => SetValue(SceneProperty, value);
     }
 
+    /// <summary>선택된 프로그램(빨간 강조). 클릭 시 갱신되고, 외부 바인딩으로도 설정 가능.</summary>
+    public ProgramEntry? SelectedProgram
+    {
+        get => (ProgramEntry?)GetValue(SelectedProgramProperty);
+        set => SetValue(SelectedProgramProperty, value);
+    }
+
     public LayoutPreview()
     {
         ClipToBounds = true;
-        Background = Brushes.Transparent;
+        Background = Brushes.Transparent; // 투명이라도 히트테스트되도록
+        Focusable = true;                 // 클릭 후 방향키 입력을 받을 수 있도록
         SizeChanged += (_, _) => Redraw();
+        MouseLeftButtonDown += OnMouseLeftButtonDown;
     }
+
+    /// <summary>외부에서 배치가 바뀐 뒤(예: 실시간 이동·틈 메우기) 지도를 다시 그린다.</summary>
+    public void Refresh() => Redraw();
 
     private static void OnChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         => ((LayoutPreview)d).Redraw();
+
+    private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        var p = e.GetPosition(this);
+        // 위에 그려진(나중에 추가된) 사각형이 우선하도록 역순 탐색.
+        for (var i = _hitTargets.Count - 1; i >= 0; i--)
+        {
+            if (_hitTargets[i].Bounds.Contains(p))
+            {
+                SelectedProgram = _hitTargets[i].Entry;
+                Focus(); // 이후 방향키 이동/크기 조절이 이 창으로 오도록
+                return;
+            }
+        }
+    }
 
     /// <summary>최소화(또는 -32000 sentinel) 창은 배치 지도에서 제외한다.</summary>
     private static bool IsOnScreen(WindowPlacement w)
@@ -49,6 +86,7 @@ public sealed class LayoutPreview : Canvas
     private void Redraw()
     {
         Children.Clear();
+        _hitTargets.Clear();
 
         double w = ActualWidth, h = ActualHeight;
         if (w < 4 || h < 4)
@@ -104,23 +142,28 @@ public sealed class LayoutPreview : Canvas
 
         // 프로그램 사각형 + 이름 라벨
         var accent = Color.FromRgb(0x3B, 0x82, 0xF6);
+        var selected = Color.FromRgb(0xEF, 0x44, 0x44); // 빨강(선택 강조)
         foreach (var p in programs)
         {
             var win = p.Window!;
+            double left = Sx(win.X), top = Sy(win.Y);
             double rw = Math.Max(2, win.Width * scale), rh = Math.Max(2, win.Height * scale);
+            var isSelected = ReferenceEquals(p, SelectedProgram);
+            var color = isSelected ? selected : accent;
 
             var rect = new Rectangle
             {
                 Width = rw,
                 Height = rh,
-                Stroke = new SolidColorBrush(accent),
-                StrokeThickness = 1.5,
-                Fill = new SolidColorBrush(Color.FromArgb(60, accent.R, accent.G, accent.B)),
+                Stroke = new SolidColorBrush(color),
+                StrokeThickness = isSelected ? 2.5 : 1.5,
+                Fill = new SolidColorBrush(Color.FromArgb((byte)(isSelected ? 90 : 60), color.R, color.G, color.B)),
                 ToolTip = $"{p.Name}  ({win.X},{win.Y}) {win.Width}x{win.Height}",
             };
-            SetLeft(rect, Sx(win.X));
-            SetTop(rect, Sy(win.Y));
+            SetLeft(rect, left);
+            SetTop(rect, top);
             Children.Add(rect);
+            _hitTargets.Add((p, new Rect(left, top, rw, rh)));
 
             var label = new TextBlock
             {
@@ -130,9 +173,10 @@ public sealed class LayoutPreview : Canvas
                 Margin = new Thickness(3, 1, 0, 0),
                 MaxWidth = rw,
                 TextTrimming = TextTrimming.CharacterEllipsis,
+                IsHitTestVisible = false, // 클릭이 아래 사각형으로 전달되도록
             };
-            SetLeft(label, Sx(win.X));
-            SetTop(label, Sy(win.Y));
+            SetLeft(label, left);
+            SetTop(label, top);
             Children.Add(label);
         }
     }
