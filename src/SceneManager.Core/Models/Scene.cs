@@ -41,6 +41,12 @@ public sealed class Scene
     /// </summary>
     public bool SquareCorners { get; set; }
 
+    /// <summary>
+    /// true면 씬 실행 전에 현재 열려 있는 창들을 모두 닫는다(러너 <c>--clean</c>). 바로가기에 이 옵션이
+    /// 반영되어, 깨끗한 상태에서 씬을 복원한다. 시스템 필터에 걸린 셸 창은 닫지 않는다.
+    /// </summary>
+    public bool CloseExistingWindows { get; set; }
+
     /// <summary>실행 대상 프로그램 목록.</summary>
     public List<ProgramEntry> Programs { get; set; } = [];
 

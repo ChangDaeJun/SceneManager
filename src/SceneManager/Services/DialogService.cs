@@ -34,6 +34,13 @@ public sealed class DialogService : IDialogService
         return window.ShowDialog() == true;
     }
 
+    public bool ShowSnapshotPriority(Scene scene)
+    {
+        var viewModel = new SnapshotPriorityViewModel(scene);
+        var window = new SnapshotPriorityWindow(viewModel) { Owner = Application.Current.MainWindow };
+        return window.ShowDialog() == true;
+    }
+
     public bool Confirm(string message, string title)
         => MessageBox.Show(message, title, MessageBoxButton.YesNo, MessageBoxImage.Question)
            == MessageBoxResult.Yes;

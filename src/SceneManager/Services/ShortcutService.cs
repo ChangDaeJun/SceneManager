@@ -12,9 +12,10 @@ public static class ShortcutService
 {
     /// <summary>
     /// 바탕화면에 "SceneRunner.exe {씬이름}"을 실행하는 바로가기를 만든다.
+    /// <see cref="Scene.CloseExistingWindows"/>가 켜져 있으면 <c>--clean</c> 인자를 붙인다.
     /// </summary>
     /// <returns>생성된 .lnk 전체 경로.</returns>
-    public static string CreateOnDesktop(Scene scene, string runnerExePath, bool clean = false)
+    public static string CreateOnDesktop(Scene scene, string runnerExePath)
     {
         var desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
         var lnkPath = Path.Combine(desktop, $"SceneManager - {Sanitize(scene.Name)}.lnk");
@@ -26,7 +27,7 @@ public static class ShortcutService
         {
             dynamic lnk = shell.CreateShortcut(lnkPath);
             lnk.TargetPath = runnerExePath;
-            lnk.Arguments = clean ? $"\"{scene.Name}\" --clean" : $"\"{scene.Name}\"";
+            lnk.Arguments = scene.CloseExistingWindows ? $"\"{scene.Name}\" --clean" : $"\"{scene.Name}\"";
             lnk.WorkingDirectory = Path.GetDirectoryName(runnerExePath) ?? string.Empty;
             lnk.Description = $"SceneManager: '{scene.Name}' 씬 실행";
 

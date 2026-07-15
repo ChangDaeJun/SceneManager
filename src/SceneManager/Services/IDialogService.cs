@@ -26,4 +26,10 @@ public interface IDialogService
     /// 프로그램별 <see cref="ProgramEntry.Arguments"/>가 <paramref name="scene"/>에 반영된다.
     /// </summary>
     bool ShowSnapshotArguments(Scene scene, MonitorLayout monitors);
+
+    /// <summary>
+    /// 스냅샷 우선순위·의존성 창(3단계)을 모달로 띄운다. 확인 시 true(저장), 취소 시 false.
+    /// <see cref="ProgramEntry.Order"/>·<see cref="ProgramEntry.DependsOnId"/>가 <paramref name="scene"/>에 반영된다.
+    /// </summary>
+    bool ShowSnapshotPriority(Scene scene);
 }

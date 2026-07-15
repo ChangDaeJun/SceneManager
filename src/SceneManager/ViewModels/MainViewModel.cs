@@ -72,6 +72,10 @@ public partial class MainViewModel : ObservableObject
         if (!_dialogs.ShowSnapshotArguments(scene, Monitors))
             return;
 
+        // 3단계 우선순위·의존성: 실행 순서와 선행 관계를 정한다.
+        if (!_dialogs.ShowSnapshotPriority(scene))
+            return;
+
         await _repository.SaveAsync(scene);
         await LoadAsync();
         SelectedScene = Scenes.FirstOrDefault(
@@ -132,10 +136,12 @@ public partial class MainViewModel : ObservableObject
 
         Monitors = _desktop.GetMonitorLayout();
 
-        // 스냅샷과 동일한 두 단계. 방금 캡처가 아니라 저장된 씬이라, 해당 창이 떠 있으면 실시간 반영된다.
+        // 스냅샷과 동일한 세 단계. 방금 캡처가 아니라 저장된 씬이라, 해당 창이 떠 있으면 실시간 반영된다.
         if (!_dialogs.ShowSnapshotFineTune(scene, Monitors, _desktop))
             return;
         if (!_dialogs.ShowSnapshotArguments(scene, Monitors))
+            return;
+        if (!_dialogs.ShowSnapshotPriority(scene))
             return;
 
         // 이름을 바꿨으면 이전 이름 파일을 먼저 지운다(파일명이 씬 이름 기준이라 중복 방지). 디스크엔 아직 이전 이름만 존재.

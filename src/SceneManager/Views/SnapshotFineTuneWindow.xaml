@@ -63,6 +63,9 @@
                 <Button Content="↩ 실행취소" Command="{Binding UndoCommand}" Padding="10,4" Margin="0,0,14,0"/>
                 <CheckBox Content="모서리 각지게" IsChecked="{Binding SquareCorners}" VerticalAlignment="Center"
                           ToolTip="스냅처럼 창을 딱 붙일 때 Windows 11의 둥근 모서리를 없앱니다."/>
+                <CheckBox Content="실행 시 기존 창 모두 닫기" IsChecked="{Binding Scene.CloseExistingWindows}"
+                          VerticalAlignment="Center" Margin="14,0,0,0"
+                          ToolTip="바로가기로 씬을 실행할 때 현재 열려 있는 창을 먼저 모두 닫습니다(--clean)."/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button Content="확인" Width="90" Margin="0,0,8,0" IsDefault="True" Click="OnOk"/>
