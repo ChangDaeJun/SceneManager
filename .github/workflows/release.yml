@@ -1,0 +1,79 @@
+name: release
+
+# 버전 태그(v1.2.3, v0.1.0-rc.1 …)를 push하면 빌드·게시·패키징 후 GitHub Release를 만든다.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write   # gh release create
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Resolve version
+        id: ver
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $version = $tag -replace '^v',''
+          $prerelease = if ($version -match '-') { 'true' } else { 'false' }
+          "tag=$tag"               | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "version=$version"       | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "prerelease=$prerelease" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "tag=$tag version=$version prerelease=$prerelease"
+
+      - name: Test
+        run: dotnet test tests/SceneManager.Core.Tests/SceneManager.Core.Tests.csproj -c Release --nologo
+
+      - name: Publish (editor + runner → same folder, self-contained)
+        shell: pwsh
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          $common = @('-c','Release','-r','win-x64','--self-contained','true',
+                      "-p:Version=$v",'-p:DebugType=none','-p:DebugSymbols=false',
+                      '-o','artifacts/publish')
+          dotnet publish src/SceneManager @common
+          if ($LASTEXITCODE -ne 0) { throw 'editor publish failed' }
+          dotnet publish src/SceneRunner  @common
+          if ($LASTEXITCODE -ne 0) { throw 'runner publish failed' }
+
+      - name: Package portable ZIP
+        shell: pwsh
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          Compress-Archive -Path artifacts/publish/* -DestinationPath "artifacts/SceneManager-portable-$v-win-x64.zip" -Force
+
+      - name: Build installer (Inno Setup)
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          & $iscc "installer\SceneManager.iss" "/DMyAppVersion=${{ steps.ver.outputs.version }}"
+          if ($LASTEXITCODE -ne 0) { throw 'installer build failed' }
+
+      - name: Create GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          $tag = "${{ steps.ver.outputs.tag }}"
+          $args = @($tag,
+                    '--title', "SceneManager $tag",
+                    '--generate-notes',
+                    "artifacts/SceneManager-setup-$v.exe",
+                    "artifacts/SceneManager-portable-$v-win-x64.zip")
+          if ("${{ steps.ver.outputs.prerelease }}" -eq 'true') { $args += '--prerelease' }
+          gh release create @args

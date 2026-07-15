@@ -10,6 +10,8 @@
     <AssemblyName>SceneRunner</AssemblyName>
     <!-- Per-Monitor DPI 인식: 좌표가 가상화되지 않도록 -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- 바탕화면 씬 바로가기가 이 아이콘을 상속한다(scene.IconPath 미지정 시) -->
+    <ApplicationIcon>..\..\assets\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

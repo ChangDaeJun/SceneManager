@@ -8,6 +8,8 @@
     <UseWPF>true</UseWPF>
     <!-- Per-Monitor DPI 인식(러너와 동일): 좌표가 가상화되지 않도록 -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- 편집기 창/작업표시줄 아이콘 -->
+    <ApplicationIcon>..\..\assets\app.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

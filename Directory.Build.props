@@ -1,0 +1,13 @@
+<Project>
+  <!-- 모든 프로젝트 공통 메타데이터. 릴리스 CI는 -p:Version=<태그>로 Version을 덮어쓴다. -->
+  <PropertyGroup>
+    <Product>SceneManager</Product>
+    <Authors>ChangDaeJun</Authors>
+    <Company>ChangDaeJun</Company>
+    <Copyright>© 2026 ChangDaeJun</Copyright>
+    <Description>실행 중인 프로그램과 창 배치를 "씬"으로 저장했다가 바로가기로 복원하는 Windows 유틸리티.</Description>
+    <Version>1.0.0</Version>
+    <RepositoryUrl>https://github.com/ChangDaeJun/SceneManager</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+</Project>

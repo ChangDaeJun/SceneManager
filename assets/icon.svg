@@ -1,0 +1,10 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- SceneManager 플레이스홀더 아이콘: 파란 배경 위 2x2 창 타일(화면 배치 상징) -->
+  <rect x="16" y="16" width="224" height="224" rx="46" fill="#2563EB"/>
+  <g fill="#FFFFFF">
+    <rect x="52"  y="52"  width="66" height="66" rx="8"/>
+    <rect x="138" y="52"  width="66" height="66" rx="8"/>
+    <rect x="52"  y="138" width="66" height="66" rx="8"/>
+    <rect x="138" y="138" width="66" height="66" rx="8"/>
+  </g>
+</svg>
