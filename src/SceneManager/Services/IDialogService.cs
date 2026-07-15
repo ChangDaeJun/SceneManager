@@ -20,4 +20,10 @@ public interface IDialogService
     /// 편집 중 <paramref name="scene"/>의 창 배치가 갱신되고 실제 창이 이동한다.
     /// </summary>
     bool ShowSnapshotFineTune(Scene scene, MonitorLayout monitors, IDesktopManager desktop);
+
+    /// <summary>
+    /// 스냅샷 인자 확인 창(2단계)을 모달로 띄운다. 확인 시 true(저장), 취소 시 false.
+    /// 프로그램별 <see cref="ProgramEntry.Arguments"/>가 <paramref name="scene"/>에 반영된다.
+    /// </summary>
+    bool ShowSnapshotArguments(Scene scene, MonitorLayout monitors);
 }

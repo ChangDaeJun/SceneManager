@@ -44,8 +44,10 @@ if (scene is null)
     return 2;
 }
 
-var filter = new JsonProcessFilterRepository(Path.Combine(baseDir, "process-filter.json"))
-    .LoadOrCreateDefault();
+var filter = new JsonAppConfigRepository(
+        Path.Combine(baseDir, "app-config.json"),
+        Path.Combine(baseDir, "process-filter.json"))
+    .LoadOrCreate().Filter;
 
 var engine = new SceneRunner(
     repository,

@@ -2,7 +2,7 @@ namespace SceneManager.Core.Models;
 
 /// <summary>
 /// 스냅샷 캡처·화면 정리 시 프로세스를 걸러내는 필터.
-/// 씬에 종속되지 않는 전역 설정으로, 별도 파일(process-filter.json)에 저장된다.
+/// 씬에 종속되지 않는 전역 설정으로, 통합 설정 파일(app-config.json)의 filter 섹션에 저장된다.
 /// </summary>
 public sealed class ProcessFilter
 {

@@ -1,11 +1,12 @@
 using System.IO;
+using System.Runtime.InteropServices;
 using SceneManager.Core.Models;
 
 namespace SceneManager.Services;
 
 /// <summary>
-/// 씬 실행 바로가기(.lnk)를 만든다. WScript.Shell COM을 지연 바인딩(dynamic)으로 사용해
-/// 별도 COM 참조 없이 생성한다.
+/// 씬 실행 바로가기(.lnk)를 만든다. WScript.Shell / Shell.Application COM을 지연 바인딩(dynamic)으로
+/// 사용해 별도 COM 참조 없이 생성한다.
 /// </summary>
 public static class ShortcutService
 {
@@ -38,7 +39,7 @@ public static class ShortcutService
         }
         finally
         {
-            System.Runtime.InteropServices.Marshal.FinalReleaseComObject(shell);
+            Marshal.FinalReleaseComObject(shell);
         }
 
         return lnkPath;

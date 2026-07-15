@@ -19,11 +19,13 @@ public partial class App : Application
 
         // Core 조립 (러너와 동일한 경로 규칙)
         var repository = new JsonSceneRepository(AppPaths.ScenesDir);
-        var filter = new JsonProcessFilterRepository(AppPaths.ProcessFilterFile).LoadOrCreateDefault();
+        var config = new JsonAppConfigRepository(AppPaths.AppConfigFile, AppPaths.LegacyProcessFilterFile).LoadOrCreate();
         var desktop = new WindowsDesktopManager();
-        var snapshot = new SceneSnapshot(desktop, filter);
+        var snapshot = new SceneSnapshot(desktop, config.Filter);
+        var advisor = new ArgumentAdvisor(config.Arguments);
 
-        var viewModel = new MainViewModel(repository, snapshot, desktop, new DialogService(), RunnerLocator.Find());
+        var viewModel = new MainViewModel(
+            repository, snapshot, desktop, new DialogService(advisor), RunnerLocator.Find());
 
         var window = new MainWindow { DataContext = viewModel };
         MainWindow = window;

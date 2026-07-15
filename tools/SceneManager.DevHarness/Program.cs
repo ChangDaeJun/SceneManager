@@ -211,11 +211,14 @@ static string ScenesDirectory() => System.IO.Path.Combine(
     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
     "SceneManager", "scenes");
 
-static ProcessFilter LoadFilter() => new JsonProcessFilterRepository(
-    System.IO.Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "SceneManager", "process-filter.json"))
-    .LoadOrCreateDefault();
+static ProcessFilter LoadFilter() => new JsonAppConfigRepository(
+        System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SceneManager", "app-config.json"),
+        System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "SceneManager", "process-filter.json"))
+    .LoadOrCreate().Filter;
 
 static string Truncate(string s, int max) => s.Length <= max ? s : s[..(max - 1)] + "…";
 

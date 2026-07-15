@@ -1,0 +1,40 @@
+<Window x:Class="SceneManager.Views.PromptDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AI 프롬프트" Height="560" Width="720"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" x:Name="Intro" TextWrapping="Wrap" Foreground="#374151"
+                   Margin="0,0,0,10"
+                   Text="아래 프롬프트를 복사해 ChatGPT·Gemini·Claude 등 원하는 AI에 붙여넣고, 답으로 받은 인자 문자열을 인자 칸에 넣으세요."/>
+
+        <!-- 언어 토글 -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+            <RadioButton x:Name="KorRadio" Content="한국어" IsChecked="True"
+                         GroupName="Lang" Margin="0,0,14,0" Checked="OnLangChanged"/>
+            <RadioButton x:Name="EngRadio" Content="English"
+                         GroupName="Lang" Checked="OnLangChanged"/>
+        </StackPanel>
+
+        <TextBox Grid.Row="2" x:Name="PromptBox"
+                 IsReadOnly="True" TextWrapping="Wrap"
+                 VerticalScrollBarVisibility="Auto"
+                 FontFamily="Consolas" FontSize="12"
+                 Background="#F9FAFB" BorderBrush="#E5E7EB"
+                 Padding="8"/>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <TextBlock x:Name="CopiedNote" Text="복사됨 ✓" Foreground="#16A34A"
+                       VerticalAlignment="Center" Margin="0,0,12,0" Visibility="Collapsed"/>
+            <Button Content="📋 복사" Width="110" Margin="0,0,8,0" Click="OnCopy"/>
+            <Button Content="닫기" Width="90" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>
