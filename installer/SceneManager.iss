@@ -55,5 +55,31 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: de
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 
-; 참고: 사용자 데이터(%LOCALAPPDATA%\SceneManager\)는 설치 폴더 밖이라 제거 시 지워지지 않는다.
+; 참고: 사용자 데이터(%LOCALAPPDATA%\SceneManager\ : 씬·설정·로그)는 설치 폴더 밖에 있어
+; 파일 삭제만으로는 지워지지 않는다. 아래 [Code]에서 제거 시 사용자에게 삭제 여부를 묻는다.
 ; 사용자가 만든 바탕화면 씬 바로가기는 제거 후 실행기가 사라져 동작하지 않게 된다.
+
+[Code]
+{ 제거 마지막 단계에서 사용자 데이터를 지울지 묻는다.
+  기본값은 "아니요"(보존) — 재설치 시 씬을 그대로 쓰는 경우가 많고, 실수로 Enter를 눌러
+  데이터가 날아가면 복구할 수 없기 때문이다. 무인(silent) 제거에서는 묻지 않고 보존한다. }
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  DataDir: String;
+begin
+  if CurUninstallStep <> usPostUninstall then
+    Exit;
+
+  DataDir := ExpandConstant('{localappdata}\SceneManager');
+  if not DirExists(DataDir) then
+    Exit;
+
+  if UninstallSilent then
+    Exit;
+
+  if MsgBox('저장된 씬과 설정, 로그도 함께 삭제할까요?' + #13#10 + #13#10 +
+            DataDir + #13#10 + #13#10 +
+            '[아니요]를 선택하면 데이터가 그대로 남아, 나중에 다시 설치할 때 씬을 이어서 쓸 수 있습니다.',
+            mbConfirmation, MB_YESNO or MB_DEFBUTTON2) = IDYES then
+    DelTree(DataDir, True, True, True);
+end;
