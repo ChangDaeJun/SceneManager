@@ -293,9 +293,13 @@ public sealed class SceneRunner : ISceneRunner
     /// <summary>죽은(파괴된) 핸들이면 GetWindowRect가 실패해 크기가 0×0으로 나온다.</summary>
     private static bool IsDeadHandle(WindowPlacement p) => p.Width == 0 && p.Height == 0;
 
-    /// <summary>현재 배치가 목표와 허용 오차(<see cref="PositionTolerancePx"/>) 내로 일치하는지.</summary>
+    /// <summary>
+    /// 현재 배치가 목표와 일치하는지(상태 + 허용 오차 <see cref="PositionTolerancePx"/> 내 좌표).
+    /// 상태까지 봐야 "좌표는 맞는데 최대화가 안 된" 창을 통과시키지 않는다.
+    /// </summary>
     private static bool IsAtTarget(WindowPlacement current, WindowPlacement target)
-        => Math.Abs(current.X - target.X) <= PositionTolerancePx
+        => current.State == target.State
+        && Math.Abs(current.X - target.X) <= PositionTolerancePx
         && Math.Abs(current.Y - target.Y) <= PositionTolerancePx
         && Math.Abs(current.Width - target.Width) <= PositionTolerancePx
         && Math.Abs(current.Height - target.Height) <= PositionTolerancePx;

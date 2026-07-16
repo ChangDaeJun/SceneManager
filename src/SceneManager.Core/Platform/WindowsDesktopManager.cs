@@ -201,7 +201,20 @@ public sealed class WindowsDesktopManager : IDesktopManager
             case WindowState.Minimized:
                 ShowWindow(hwnd, SW_MINIMIZE);
                 return;
+
             case WindowState.Maximized:
+                // SW_MAXIMIZE는 "창이 지금 있는 모니터"에서 최대화한다. 앱이 이전 세션 위치(예: 보조
+                // 모니터)로 떴다면 엉뚱한 화면에서 최대화되므로, 먼저 목표 사각형으로 옮겨 대상 모니터에
+                // 올려둔 뒤 최대화한다. (목표 크기를 모르면 옮길 수 없으니 그대로 최대화.)
+                if (placement.Width > 0 && placement.Height > 0)
+                {
+                    ShowWindow(hwnd, SW_RESTORE); // 최대화 상태면 옮길 수 없다
+                    SetWindowPos(
+                        hwnd, IntPtr.Zero,
+                        (int)placement.X, (int)placement.Y,
+                        (int)placement.Width, (int)placement.Height,
+                        SWP_NOZORDER | SWP_NOACTIVATE);
+                }
                 ShowWindow(hwnd, SW_MAXIMIZE);
                 return;
         }
